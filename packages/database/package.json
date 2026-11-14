@@ -1,0 +1,20 @@
+{
+  "name": "@pudim/database",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./models": "./src/models/index.ts",
+    "./repositories": "./src/repositories/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "mongoose": "^9.12.1"
+  },
+  "devDependencies": {
+    "@pudim/config": "workspace:*"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "extends": "@pudim/config/tsconfig",
+  "compilerOptions": {
+    "types": ["bun"],
+    "paths": {
+      "#database/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

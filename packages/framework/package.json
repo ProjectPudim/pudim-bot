@@ -1,0 +1,20 @@
+{
+  "name": "@pudim/framework",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src"
+  },
+  "devDependencies": {
+    "@pudim/config": "workspace:*"
+  },
+  "dependencies": {
+    "@fluxerjs/core": "^3.3.0"
+  }
+}

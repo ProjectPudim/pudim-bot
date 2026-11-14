@@ -1,0 +1,30 @@
+{
+  "name": "pudim",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:bot": "bun run --filter @pudim/bot dev",
+    "dev:api": "bun run --filter @pudim/api dev",
+    "dev:dashboard": "bun run --filter @pudim/dashboard dev",
+    "dev": "bun --env-file=./apps/bot/.env --watch ./apps/bot/src/index.ts",
+    "lint": "eslint .",
+    "typecheck": "bun run --filter '*' typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
+    "@types/bun": "^1.4.4",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.10.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2"
+  }
+}

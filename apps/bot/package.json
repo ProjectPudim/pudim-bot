@@ -1,0 +1,24 @@
+{
+  "name": "@pudim/bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "bunx oxlint src"
+  },
+  "dependencies": {
+    "@pudim/cache": "workspace:*",
+    "@pudim/framework": "workspace:*",
+    "@pudim/i18n": "workspace:*",
+    "@pudim/shared": "workspace:*",
+    "@pudim/database": "workspace:*",
+    "@fluxerjs/core": "^3.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@pudim/config": "workspace:*"
+  }
+}
