@@ -10,6 +10,7 @@ import serverbanner from './commands/utility/serverbanner'
 import servericon from './commands/utility/servericon'
 import serverinfo from './commands/utility/serverinfo'
 import userbanner from './commands/utility/userbanner'
+import userinfo from './commands/utility/userinfo'
 import duration from './common/duration'
 import permissions from './common/permissions'
 
@@ -26,7 +27,8 @@ export default {
     serverbanner,
     servericon,
     serverinfo,
-    userbanner
+    userbanner,
+    userinfo
   },
   common: { and: 'e', permissions, duration },
 }
