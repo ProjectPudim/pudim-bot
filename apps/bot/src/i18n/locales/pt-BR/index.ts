@@ -9,6 +9,7 @@ import roleinfo from './commands/utility/roleinfo'
 import serverbanner from './commands/utility/serverbanner'
 import servericon from './commands/utility/servericon'
 import serverinfo from './commands/utility/serverinfo'
+import userbanner from './commands/utility/userbanner'
 import duration from './common/duration'
 import permissions from './common/permissions'
 
@@ -24,7 +25,8 @@ export default {
     roleinfo,
     serverbanner,
     servericon,
-    serverinfo
+    serverinfo,
+    userbanner
   },
   common: { and: 'e', permissions, duration },
 }

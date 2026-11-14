@@ -4,6 +4,7 @@ import { bootstrap } from '@pudim/framework'
 import { logger } from '#bot/utils/logger'
 import { env } from './env'
 import { i18n } from './i18n'
+import { http } from '@pudim/shared/http'
 
 let closing = false
 let app: Awaited<ReturnType<typeof bootstrap>> | undefined
@@ -61,6 +62,10 @@ try {
     },
 
     logger,
+
+    beforeLoad() {
+      http.init()
+    }
   })
 
   logger.success('The bot has been started')

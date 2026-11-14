@@ -8,5 +8,7 @@ export const env = await validateEnv(
     BOT_TOKEN: z.string('The token of the bot is required').min(1),
     MONGODB_URI: z.string('The MongoDB URI is required').min(1),
     VALKEY_URL: z.string('The Valkey URl is required').min(1),
+
+    FELIPW_API_URL: z.string().optional()
   }),
 )
