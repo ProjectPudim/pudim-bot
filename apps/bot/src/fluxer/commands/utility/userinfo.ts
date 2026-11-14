@@ -1,8 +1,8 @@
 import { SnowflakeUtil } from '@fluxerjs/util'
 import { createCommand } from '#bot/fluxer'
+import { fetchFluxerProfile } from '#bot/utils/apis/felipw'
 import { colors, emojis } from '#bot/utils/constants'
 import { Embed } from '#bot/utils/embed'
-import { fetchFluxerProfile } from '#bot/utils/apis/felipw'
 import { fetchMember, parseTargetId } from '#bot/utils/user'
 
 const USAGE = '{prefix}userinfo [@user|id]'
@@ -234,11 +234,12 @@ export default createCommand({
   async run(ctx) {
     const { t, args, author, client, guildId } = ctx
 
-    const targetId = args[0] ? parseTargetId(args[0]) : author.id
+    const raw = args[0]?.trim()
+    const targetId = raw ? parseTargetId(raw) : author.id
 
     if (!targetId) {
       await ctx.reply({
-        content: t('commands.userinfo.invalidUser')
+        content: t('common.invalid.user'),
       })
       return
     }
@@ -262,7 +263,7 @@ export default createCommand({
 
     if (!apiUser && !user) {
       await ctx.reply({
-        content: t('commands.userinfo.userNotFound')
+        content: t('common.notFound.user', raw ?? targetId),
       })
       return
     }

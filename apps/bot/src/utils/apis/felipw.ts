@@ -1,5 +1,5 @@
-import { env } from '#bot/env'
 import { http } from '@pudim/shared/http'
+import { env } from '#bot/env'
 
 export interface ConnectedAccount {
   type: string

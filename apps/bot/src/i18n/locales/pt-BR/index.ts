@@ -12,6 +12,8 @@ import serverinfo from './commands/utility/serverinfo'
 import userbanner from './commands/utility/userbanner'
 import userinfo from './commands/utility/userinfo'
 import duration from './common/duration'
+import invalid from './common/invalid'
+import notFound from './common/notFound'
 import permissions from './common/permissions'
 
 export default {
@@ -28,7 +30,7 @@ export default {
     servericon,
     serverinfo,
     userbanner,
-    userinfo
+    userinfo,
   },
-  common: { and: 'e', permissions, duration },
+  common: { and: 'e', permissions, duration, invalid, notFound },
 }

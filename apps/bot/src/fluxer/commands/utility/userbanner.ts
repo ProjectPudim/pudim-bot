@@ -1,7 +1,7 @@
 import { createCommand } from '#bot/fluxer'
+import { fetchFluxerProfile } from '#bot/utils/apis/felipw'
 import { colors } from '#bot/utils/constants'
 import { Embed } from '#bot/utils/embed'
-import { fetchFluxerProfile } from '#bot/utils/apis/felipw'
 import { parseTargetId } from '#bot/utils/user'
 
 const USAGE = '{prefix}userbanner [@user|id]'
@@ -22,7 +22,7 @@ export default createCommand({
     let targetId = parseTargetId(args[0])
     if (args[0] && !targetId) {
       await ctx.reply({
-        content: t('commands.userbanner.invalidUser')
+        content: t('common.invalid.user'),
       })
       return
     }
@@ -55,14 +55,14 @@ export default createCommand({
 
     if (!user && !apiProfile) {
       await ctx.reply({
-        content: t('commands.userbanner.userNotFound', targetId),
+        content: t('common.notFound.user', args[0]?.trim() || targetId),
       })
       return
     }
 
     if (!bannerUrl) {
       await ctx.reply({
-        content: t('commands.userbanner.noBanner', targetId)
+        content: t('commands.userbanner.noBanner', targetId),
       })
       return
     }

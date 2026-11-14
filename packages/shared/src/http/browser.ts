@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
-import type { BrowserProfile } from './types'
 import type { Resolved } from './constants'
+import type { BrowserProfile } from './types'
 
 export async function detectChromeMajor(fallback: number): Promise<number> {
   try {
@@ -11,10 +11,7 @@ export async function detectChromeMajor(fallback: number): Promise<number> {
     const json = (await res.json()) as {
       versions?: Array<{ version?: string }>
     }
-    const major = parseInt(
-      json.versions?.[0]?.version?.split('.')[0] ?? '',
-      10,
-    )
+    const major = parseInt(json.versions?.[0]?.version?.split('.')[0] ?? '', 10)
     if (Number.isInteger(major) && major >= 100 && major < 400) return major
   } catch {
     // Network down or API unavailable: continue with the fallback version
@@ -50,10 +47,12 @@ export function buildProfiles(major: number): BrowserProfile[] {
   ]
 }
 
-export function pickProfile(profiles: BrowserProfile[], exclude: BrowserProfile | null = null): BrowserProfile {
+export function pickProfile(
+  profiles: BrowserProfile[],
+  exclude: BrowserProfile | null = null,
+): BrowserProfile {
   const pool = profiles.filter((p) => p !== exclude)
-  const picked =
-    pool[crypto.randomInt(Math.max(pool.length, 1))] ?? profiles[0]
+  const picked = pool[crypto.randomInt(Math.max(pool.length, 1))] ?? profiles[0]
   return (
     picked ?? {
       name: 'Fallback Chrome',
@@ -65,10 +64,14 @@ export function pickProfile(profiles: BrowserProfile[], exclude: BrowserProfile 
   )
 }
 
-export function browserHeaders(cfg: Resolved, url: URL, profile: BrowserProfile, siteOrigin: string): Headers {
+export function browserHeaders(
+  cfg: Resolved,
+  url: URL,
+  profile: BrowserProfile,
+  siteOrigin: string,
+): Headers {
   const headers = new Headers()
-  const referer =
-    cfg.referer === undefined ? `${siteOrigin}/` : cfg.referer
+  const referer = cfg.referer === undefined ? `${siteOrigin}/` : cfg.referer
   const isImage = cfg.kind === 'image'
 
   headers.set('sec-ch-ua', profile.secChUa)
@@ -103,4 +106,3 @@ function secFetchSite(targetHost: string, refererUrl: string): string {
     return 'cross-site'
   }
 }
-

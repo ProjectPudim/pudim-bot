@@ -22,11 +22,13 @@ export default createCommand({
 
     let targetId: string | null
 
-    if (args[0]) {
-      targetId = parseChannelId(args[0])
+    const raw = args[0]?.trim()
+
+    if (raw) {
+      targetId = parseChannelId(raw)
       if (!targetId) {
         await ctx.reply({
-          content: t('commands.channelinfo.invalidChannel'),
+          content: t('common.invalid.channel'),
         })
         return
       }
@@ -38,7 +40,7 @@ export default createCommand({
 
     if (!channel) {
       await ctx.reply({
-        content: t('commands.channelinfo.notFound'),
+        content: t('common.notFound.channel', raw ?? targetId),
       })
       return
     }
@@ -51,7 +53,7 @@ export default createCommand({
       channel.guildId !== guildId
     ) {
       await ctx.reply({
-        content: t('commands.channelinfo.notFound'),
+        content: t('common.notFound.channel', raw ?? targetId),
       })
       return
     }

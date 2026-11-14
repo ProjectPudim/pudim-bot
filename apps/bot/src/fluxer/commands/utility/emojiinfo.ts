@@ -31,7 +31,7 @@ export default createCommand({
     const parsed = parseEmoji(input)
     if (!parsed) {
       await ctx.reply({
-        content: t('commands.emojiinfo.invalidEmoji'),
+        content: t('common.invalid.emoji'),
       })
       return
     }
@@ -48,7 +48,7 @@ export default createCommand({
       .catch(() => null)
     if (!metadata) {
       await ctx.reply({
-        content: t('commands.emojiinfo.notFound'),
+        content: t('common.notFound.emoji', input),
       })
       return
     }

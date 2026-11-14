@@ -24,7 +24,7 @@ export default createCommand({
     const guild = await client.guilds.fetch(targetGuildId).catch(() => null)
     if (!guild) {
       await ctx.reply({
-        content: t('commands.serverbanner.notFound'),
+        content: t('common.notFound.server', targetGuildId),
       })
       return
     }

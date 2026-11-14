@@ -16,10 +16,11 @@ export default createCommand({
   async run(ctx) {
     const { args, t, client, author } = ctx
 
-    const targetId = args[0] ? parseTargetId(args[0]) : author.id
+    const raw = args[0]?.trim()
+    const targetId = raw ? parseTargetId(raw) : author.id
     if (!targetId) {
       await ctx.reply({
-        content: t('commands.avatar.userNotFound'),
+        content: t('common.invalid.user'),
       })
       return
     }
@@ -30,7 +31,7 @@ export default createCommand({
 
     if (!user) {
       await ctx.reply({
-        content: t('commands.avatar.userNotFound'),
+        content: t('common.notFound.user', raw ?? targetId),
       })
       return
     }

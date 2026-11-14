@@ -35,4 +35,3 @@ export class HttpError extends Error {
     this.attempt = init.attempt ?? 1
   }
 }
-

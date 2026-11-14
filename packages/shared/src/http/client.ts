@@ -1,9 +1,29 @@
-import type { BrowserProfile, HttpClientOptions, HttpMethod, HttpResponse, RequestOptions, ResponseType, BodyType, FetchInit, QueryValue } from './types'
-import type { Resolved } from './constants'
-import { DEFAULTS } from './constants'
+import {
+  browserHeaders,
+  buildProfiles,
+  detectChromeMajor,
+  pickProfile,
+} from './browser'
+import { DEFAULTS, type Resolved } from './constants'
 import { HttpError } from './errors'
-import { defined, isPlainObject, abortError, sleep, parseRetryAfter } from './utils'
-import { detectChromeMajor, buildProfiles, pickProfile, browserHeaders } from './browser'
+import type {
+  BodyType,
+  BrowserProfile,
+  FetchInit,
+  HttpClientOptions,
+  HttpMethod,
+  HttpResponse,
+  QueryValue,
+  RequestOptions,
+  ResponseType,
+} from './types'
+import {
+  abortError,
+  defined,
+  isPlainObject,
+  parseRetryAfter,
+  sleep,
+} from './utils'
 
 export class HttpClient {
   private static profiles: BrowserProfile[] = []
@@ -139,7 +159,12 @@ export class HttpClient {
     startedAt: number,
   ): Promise<HttpResponse<T>> {
     const headers = cfg.browserHeaders
-      ? browserHeaders(cfg, url, this.profile ?? pickProfile(HttpClient.profiles), this.siteOrigin)
+      ? browserHeaders(
+          cfg,
+          url,
+          this.profile ?? pickProfile(HttpClient.profiles),
+          this.siteOrigin,
+        )
       : new Headers()
     for (const [key, value] of Object.entries({
       ...this.opts.headers,

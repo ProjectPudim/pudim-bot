@@ -5,7 +5,9 @@ export const defined = <T extends object>(obj: T): T =>
     Object.entries(obj).filter(([, v]) => v !== undefined),
   ) as T
 
-export const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+export const isPlainObject = (
+  value: unknown,
+): value is Record<string, unknown> => {
   if (value === null || typeof value !== 'object') return false
   const proto = Object.getPrototypeOf(value)
   return proto === Object.prototype || proto === null
@@ -35,4 +37,3 @@ export const parseRetryAfter = (value: string | null): number | null => {
   const date = Date.parse(value)
   return Number.isFinite(date) ? Math.max(0, date - Date.now()) : null
 }
-

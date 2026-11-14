@@ -3,8 +3,6 @@ import { emojis } from '#bot/utils/constants'
 
 export default {
   title: 'Informações do Canal',
-  notFound: `${emojis.error} ${config.separator} Me desculpe! Eu **não consegui** encontrar esse canal. Por favor, informe um canal que exista nesse servidor.`,
-  invalidChannel: `${emojis.error} ${config.separator} O canal que você informou é **inválido**. Por favor, informe um canal válido.`,
   noAccess: `${emojis.error} ${config.separator} Me desculpe! Eu não consigo acessar o canal que você informou, por favor, informe um canal que eu tenha acesso.`,
   labels: {
     name: 'Nome',

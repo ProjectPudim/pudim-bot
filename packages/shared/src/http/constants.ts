@@ -16,4 +16,3 @@ export const DEFAULTS = {
 }
 
 export type Resolved = typeof DEFAULTS & SharedOptions
-

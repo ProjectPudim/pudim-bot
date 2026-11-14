@@ -1,5 +1,4 @@
-import type { Client } from '@fluxerjs/core'
-import { parseUserMention } from '@fluxerjs/core'
+import { parseUserMention, type Client } from '@fluxerjs/core'
 import type { RestMember } from '@pudim/shared/types'
 
 export function parseTargetId(raw?: string): string | null {

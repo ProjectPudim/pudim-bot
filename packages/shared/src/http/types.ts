@@ -99,4 +99,3 @@ export interface RequestOptions extends SharedOptions {
   json?: unknown
   signal?: AbortSignal
 }
-

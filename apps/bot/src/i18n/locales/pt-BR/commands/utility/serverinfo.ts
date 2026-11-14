@@ -1,10 +1,6 @@
-import { config } from "#bot/utils/config";
-import { emojis } from "#bot/utils/constants";
-
 export default {
   title: 'Informações do Servidor',
   statsTitle: 'Estatísticas do Servidor',
-  notFound: (id: string) => `${emojis.error} ${config.separator} Me desculpe! Eu **não consegui** encontrar um servidor com o ID \`${id}\`. Por favor, informe um servidor que exista.`,
   topics: {
     server: 'Servidor',
     security: 'Segurança',

@@ -24,7 +24,7 @@ export default createCommand({
     const guild = await client.guilds.fetch(targetGuildId).catch(() => null)
     if (!guild) {
       await ctx.reply({
-        content: t('commands.servericon.notFound'),
+        content: t('common.notFound.server', targetGuildId),
       })
       return
     }
@@ -53,7 +53,7 @@ export default createCommand({
 
     embed.setDescription(t('commands.servericon.openInBrowser', iconUrl))
     embed.setImage(iconUrl)
-    
+
     await ctx.reply({
       embeds: [embed],
       allowedMentions: {
