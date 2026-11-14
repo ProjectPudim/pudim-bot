@@ -1,5 +1,5 @@
-import { config } from "#bot/utils/config";
-import { emojis } from "#bot/utils/constants";
+import { config } from '#bot/utils/config'
+import { emojis } from '#bot/utils/constants'
 
 export default {
   title: 'Informações do Canal',

@@ -23,7 +23,7 @@ export default createCommand({
     const input = args.join(' ').trim()
     if (!input) {
       await ctx.reply({
-        content: t('commands.emojiinfo.invalidUsage')
+        content: t('commands.emojiinfo.invalidUsage'),
       })
       return
     }
@@ -31,14 +31,14 @@ export default createCommand({
     const parsed = parseEmoji(input)
     if (!parsed) {
       await ctx.reply({
-        content: t('commands.emojiinfo.invalidEmoji')
+        content: t('commands.emojiinfo.invalidEmoji'),
       })
       return
     }
 
     if (!/^\d{17,20}$/.test(parsed.id)) {
       await ctx.reply({
-        content: t('commands.emojiinfo.unicodeNotSupported')
+        content: t('commands.emojiinfo.unicodeNotSupported'),
       })
       return
     }
@@ -48,7 +48,7 @@ export default createCommand({
       .catch(() => null)
     if (!metadata) {
       await ctx.reply({
-        content: t('commands.emojiinfo.notFound')
+        content: t('commands.emojiinfo.notFound'),
       })
       return
     }

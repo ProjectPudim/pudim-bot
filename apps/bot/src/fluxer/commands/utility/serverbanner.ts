@@ -2,7 +2,7 @@ import { createCommand } from '#bot/fluxer'
 import { colors } from '#bot/utils/constants'
 import { Embed } from '#bot/utils/embed'
 
-const USAGE = '{prefix}serverbanner'
+const USAGE = '{prefix}serverbanner [guildId]'
 
 export default createCommand({
   name: 'serverbanner',
@@ -16,14 +16,15 @@ export default createCommand({
   aliases: ['sbanner'],
   guildOnly: true,
   async run(ctx) {
-    const { t, author, client, guildId } = ctx
+    const { t, args, author, client, guildId: currentGuildId } = ctx
 
-    if (!guildId) return
+    const targetGuildId = args[0]?.trim() || currentGuildId
+    if (!targetGuildId) return
 
-    const guild = await client.guilds.fetch(guildId).catch(() => null)
+    const guild = await client.guilds.fetch(targetGuildId).catch(() => null)
     if (!guild) {
       await ctx.reply({
-        content: t('commands.serverbanner.notFound')
+        content: t('commands.serverbanner.notFound'),
       })
       return
     }
@@ -37,7 +38,7 @@ export default createCommand({
 
     if (!bannerUrl) {
       await ctx.reply({
-        content: t('commands.serverbanner.noBanner')
+        content: t('commands.serverbanner.noBanner', guild.id),
       })
       return
     }

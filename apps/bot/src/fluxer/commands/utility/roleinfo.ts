@@ -24,7 +24,7 @@ export default createCommand({
     const input = args.join(' ').trim()
     if (!input) {
       await ctx.reply({
-        content: t('commands.roleinfo.invalidusage')
+        content: t('commands.roleinfo.invalidusage'),
       })
       return
     }
@@ -32,7 +32,7 @@ export default createCommand({
     const guild = await client.guilds.fetch(guildId).catch(() => null)
     if (!guild) {
       await ctx.reply({
-        content: t('commands.roleinfo.notFound')
+        content: t('commands.roleinfo.notFound'),
       })
       return
     }
@@ -55,7 +55,7 @@ export default createCommand({
 
     if (!role) {
       await ctx.reply({
-        content:  t('commands.roleinfo.notFound')
+        content: t('commands.roleinfo.notFound'),
       })
       return
     }

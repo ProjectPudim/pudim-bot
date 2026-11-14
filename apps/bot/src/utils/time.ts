@@ -1,7 +1,4 @@
-import {
-  i18n,
-  type TranslateFunction,
-} from '#bot/i18n'
+import { i18n, type TranslateFunction } from '#bot/i18n'
 
 export type DurationUnit =
   'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year'
@@ -219,9 +216,7 @@ export function formatDuration(
   localeOrT: string | DurationTranslator,
 ): string {
   const t =
-    typeof localeOrT === 'string'
-      ? i18n.getTranslator('pt-BR')
-      : localeOrT
+    typeof localeOrT === 'string' ? i18n.getTranslator('pt-BR') : localeOrT
 
   const totalSeconds = Math.max(
     0,

@@ -1,8 +1,7 @@
 export default {
   seconds: (value: number) =>
     `${value} ${value === 1 ? 'segundo' : 'segundos'}`,
-  minutes: (value: number) =>
-    `${value} ${value === 1 ? 'minuto' : 'minutos'}`,
+  minutes: (value: number) => `${value} ${value === 1 ? 'minuto' : 'minutos'}`,
   hours: (value: number) => `${value} ${value === 1 ? 'hora' : 'horas'}`,
   days: (value: number) => `${value} ${value === 1 ? 'dia' : 'dias'}`,
   weeks: (value: number) => `${value} ${value === 1 ? 'semana' : 'semanas'}`,

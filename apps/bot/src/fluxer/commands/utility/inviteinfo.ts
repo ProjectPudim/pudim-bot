@@ -1,4 +1,3 @@
-
 import { Invite } from '@fluxerjs/core'
 import { createCommand } from '#bot/fluxer'
 import { colors } from '#bot/utils/constants'
@@ -16,7 +15,6 @@ const RECOGNIZED_HOSTS = new Set([
 
 const INVITE_CODE_PATTERN = /^[a-zA-Z0-9-]{2,}$/
 
-
 function extractInviteCode(input: string): string | null {
   const trimmed = input.trim()
 
@@ -28,9 +26,7 @@ function extractInviteCode(input: string): string | null {
 
   try {
     const url = new URL(
-      /^https?:\/\//i.test(trimmed)
-        ? trimmed
-        : `https://${trimmed}`,
+      /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`,
     )
 
     if (!RECOGNIZED_HOSTS.has(url.hostname.toLowerCase())) {
@@ -42,9 +38,7 @@ function extractInviteCode(input: string): string | null {
     if (segments.length === 1) {
       const code = segments[0]
 
-      return code && INVITE_CODE_PATTERN.test(code)
-        ? code
-        : null
+      return code && INVITE_CODE_PATTERN.test(code) ? code : null
     }
 
     if (segments.length === 2) {
@@ -65,7 +59,6 @@ function extractInviteCode(input: string): string | null {
   }
 }
 
-
 function toTimestamp(date: Date): number {
   return Math.floor(date.getTime() / 1000)
 }
@@ -82,7 +75,7 @@ export default createCommand({
   aliases: ['invite'],
 
   async run(ctx) {
-    const { t, args, author, client } = ctx
+    const { t, args, client } = ctx
 
     const input = args.join(' ').trim()
 
@@ -113,10 +106,7 @@ export default createCommand({
         error.code === 'UNKNOWN_INVITE'
 
       if (!isUnknownInvite) {
-        console.error(
-          `[inviteinfo] Failed to fetch invite "${code}":`,
-          error,
-        )
+        console.error(`[inviteinfo] Failed to fetch invite "${code}":`, error)
       }
 
       await ctx.reply({
@@ -151,9 +141,7 @@ export default createCommand({
     }
 
     if (invite.uses != null) {
-      lines.push(
-        `**${t('commands.inviteinfo.labels.uses')}:** ${invite.uses}`,
-      )
+      lines.push(`**${t('commands.inviteinfo.labels.uses')}:** ${invite.uses}`)
     }
 
     if (invite.maxUses != null) {
@@ -179,9 +167,7 @@ export default createCommand({
     if (guild) {
       lines.push('')
 
-      lines.push(
-        `**${t('commands.inviteinfo.labels.server')}:** ${guild.name}`,
-      )
+      lines.push(`**${t('commands.inviteinfo.labels.server')}:** ${guild.name}`)
 
       if (guild.id) {
         lines.push(

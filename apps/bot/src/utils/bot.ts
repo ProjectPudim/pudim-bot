@@ -1,4 +1,4 @@
-import type { Client } from "@fluxerjs/core";
+import type { Client } from '@fluxerjs/core'
 
 export interface BotStats {
   guilds: number

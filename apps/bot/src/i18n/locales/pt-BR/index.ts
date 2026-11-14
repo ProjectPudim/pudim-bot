@@ -7,10 +7,22 @@ import help from './commands/utility/help'
 import inviteinfo from './commands/utility/inviteinfo'
 import roleinfo from './commands/utility/roleinfo'
 import serverbanner from './commands/utility/serverbanner'
+import servericon from './commands/utility/servericon'
 import duration from './common/duration'
 import permissions from './common/permissions'
 
 export default {
-  commands: { help, avatar, botinfo, botinvite, channelinfo, emojiinfo, inviteinfo, roleinfo, serverbanner },
+  commands: {
+    help,
+    avatar,
+    botinfo,
+    botinvite,
+    channelinfo,
+    emojiinfo,
+    inviteinfo,
+    roleinfo,
+    serverbanner,
+    servericon,
+  },
   common: { and: 'e', permissions, duration },
 }

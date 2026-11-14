@@ -1,4 +1,4 @@
-import { parseUserMention } from "@fluxerjs/core"
+import { parseUserMention } from '@fluxerjs/core'
 
 export function parseTargetId(raw?: string): string | null {
   if (!raw) return null
