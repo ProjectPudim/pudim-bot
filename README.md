@@ -141,5 +141,3 @@ Consulte o arquivo [LICENSE](LICENSE) para mais informações.
 <p align="center">
   Feito com ❤️ para a comunidade Fluxer.
 </p>
-```<|end|><|start|>assist to=write<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="path">
-C:\Users\Miguel\Desktop\projects\pudim\pudim\.github\CONTRIBUTING.md
