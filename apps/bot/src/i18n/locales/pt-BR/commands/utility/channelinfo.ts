@@ -1,0 +1,47 @@
+import { config } from "#bot/utils/config";
+import { emojis } from "#bot/utils/constants";
+
+export default {
+  title: 'Informações do Canal',
+  notFound: `${emojis.error} ${config.separator} Me desculpe! Eu **não consegui** encontrar esse canal. Por favor, informe um canal que exista nesse servidor.`,
+  invalidChannel: `${emojis.error} ${config.separator} O canal que você informou é **inválido**. Por favor, informe um canal válido.`,
+  noAccess: `${emojis.error} ${config.separator} Me desculpe! Eu não consigo acessar o canal que você informou, por favor, informe um canal que eu tenha acesso.`,
+  labels: {
+    name: 'Nome',
+    id: 'ID',
+    type: 'Tipo',
+    created: 'Criado em',
+    category: 'Categoria',
+    topic: 'Tópico',
+    nsfw: 'NSFW',
+    slowmode: 'Modo lento',
+    position: 'Posição',
+    bitrate: 'Bitrate',
+    userLimit: 'Limite de usuários',
+    none: 'Nenhum',
+    noCategory: 'Sem categoria',
+    noTopic: 'Sem tópico',
+  },
+  types: {
+    text: 'Canal de texto',
+    voice: 'Canal de voz',
+    category: 'Categoria',
+    announcement: 'Canal de anúncios',
+    announcementThread: 'Thread de anúncios',
+    publicThread: 'Thread pública',
+    privateThread: 'Thread privada',
+    forum: 'Fórum',
+    media: 'Mídia',
+    link: 'Link',
+    dm: 'Mensagem direta',
+    groupDm: 'Grupo de mensagens diretas',
+    personalNotes: 'Notas pessoais',
+    unknown: 'Desconhecido',
+  },
+  values: {
+    yes: 'Sim',
+    no: 'Não',
+    disabled: 'Desativado',
+    unlimited: 'Ilimitado',
+  },
+}
