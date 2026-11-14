@@ -1,4 +1,3 @@
-
 # 🤝 Contribuindo com o Pudim
 
 Obrigado pelo interesse em contribuir com o **Pudim**! 🍮
@@ -95,29 +94,38 @@ git checkout -b feat/nome-da-funcionalidade
 
 ## 📁 Organização do projeto
 
-A estrutura planejada do repositório separa as aplicações dos códigos compartilhados:
+O repositório é organizado como um monorepo com Bun Workspaces:
 
 ```text
-pudim-bot/
+pudim/
 ├── apps/
-│   ├── bot/
-│   ├── api/
-│   └── dashboard/
+│   └── bot/
 ├── packages/
-│   ├── core/
+│   ├── cache/
+│   ├── config/
 │   ├── database/
+│   ├── framework/
+│   ├── i18n/
 │   └── shared/
 ├── .github/
+│   ├── workflows/
 │   └── CONTRIBUTING.md
-├── docs/
-├── LICENSE
-└── README.md
+├── eslint.config.js
+├── prettier.config.js
+├── tsconfig.json
+├── package.json
+├── README.md
+└── LICENSE
 ```
 
-- **apps/** — Aplicações independentes do projeto.
-- **packages/** — Código reutilizável e compartilhado.
+- **apps/bot** — Aplicação do bot.
+- **packages/cache** — Integração com cache (Valkey/Redis).
+- **packages/config** — Configuração compartilhada do TypeScript.
+- **packages/database** — Conexão e modelos do MongoDB.
+- **packages/framework** — Framework de comandos, eventos e bootstrap.
+- **packages/i18n** — Sistema de internacionalização.
+- **packages/shared** — Tipos e utilitários compartilhados.
 - **.github/** — Workflows, templates e configurações do GitHub.
-- **docs/** — Documentação técnica do projeto.
 
 Antes de criar novos módulos, packages ou utilitários, verifique se já existe uma implementação que possa ser reutilizada.
 
@@ -144,6 +152,7 @@ Antes de enviar um Pull Request, execute as verificações de qualidade disponí
 ```bash
 bun run lint
 bun run typecheck
+bun run format:check
 ```
 
 Quando existirem testes automatizados relacionados à sua alteração, execute-os também.
@@ -162,13 +171,13 @@ Se alguma verificação não puder ser executada, explique o motivo na descriç�
 
 Utilize nomes claros e descritivos para identificar o objetivo de cada branch.
 
-| Tipo | Exemplo |
-| --- | --- |
-| Funcionalidade | `feat/ticket-system` |
-| Correção | `fix/giveaway-validation` |
-| Documentação | `docs/update-readme` |
-| Refatoração | `refactor/command-handler` |
-| Manutenção | `chore/update-dependencies` |
+| Tipo           | Exemplo                     |
+| -------------- | --------------------------- |
+| Funcionalidade | `feat/ticket-system`        |
+| Correção       | `fix/giveaway-validation`   |
+| Documentação   | `docs/update-readme`        |
+| Refatoração    | `refactor/command-handler`  |
+| Manutenção     | `chore/update-dependencies` |
 
 Para mensagens de commit, recomendamos seguir o padrão [Conventional Commits](https://www.conventionalcommits.org/).
 

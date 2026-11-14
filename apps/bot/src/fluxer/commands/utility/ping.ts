@@ -27,10 +27,7 @@ export default createCommand({
         )
         .setTimestamp()
         .setColor(colors.primary)
-        .setThumbnail(
-          client.user?.avatarURL() ??
-            images.defaultAvatar,
-        )
+        .setThumbnail(client.user?.avatarURL() ?? images.defaultAvatar)
 
     const reply = await ctx.reply({
       embeds: [embed()],
@@ -50,10 +47,7 @@ export default createCommand({
           )
           .setTimestamp()
           .setColor(colors.primary)
-          .setThumbnail(
-            client.user?.avatarURL() ??
-              images.defaultAvatar,
-          ),
+          .setThumbnail(client.user?.avatarURL() ?? images.defaultAvatar),
       ],
     })
   },
