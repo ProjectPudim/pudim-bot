@@ -1,6 +1,8 @@
 export const config = {
   defaultPrefix: 'p.',
   defaultLocale: 'pt-BR',
+  
+  separator: '**|**',
 
   links: {
     botInvite:
