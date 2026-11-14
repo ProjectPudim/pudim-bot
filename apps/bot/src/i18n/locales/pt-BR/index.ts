@@ -5,10 +5,11 @@ import channelinfo from './commands/utility/channelinfo'
 import emojiinfo from './commands/utility/emojiinfo'
 import help from './commands/utility/help'
 import inviteinfo from './commands/utility/inviteinfo'
+import roleinfo from './commands/utility/roleinfo'
 import duration from './common/duration'
 import permissions from './common/permissions'
 
 export default {
-  commands: { help, avatar, botinfo, botinvite, channelinfo, emojiinfo, inviteinfo },
+  commands: { help, avatar, botinfo, botinvite, channelinfo, emojiinfo, inviteinfo, roleinfo },
   common: { and: 'e', permissions, duration },
 }
