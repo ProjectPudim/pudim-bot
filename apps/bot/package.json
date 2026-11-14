@@ -10,12 +10,13 @@
     "lint": "bunx oxlint src"
   },
   "dependencies": {
+    "@fluxerjs/core": "^3.3.0",
+    "@fluxerjs/util": "^3.1.0",
     "@pudim/cache": "workspace:*",
+    "@pudim/database": "workspace:*",
     "@pudim/framework": "workspace:*",
     "@pudim/i18n": "workspace:*",
     "@pudim/shared": "workspace:*",
-    "@pudim/database": "workspace:*",
-    "@fluxerjs/core": "^3.3.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
