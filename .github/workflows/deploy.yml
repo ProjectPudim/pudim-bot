@@ -8,7 +8,7 @@ on:
       app:
         description: App para deploy
         type: choice
-        options: [bot]   # adicione: api, website, dashboard...
+        options: [bot]   # add: api, website, dashboard...
 
 permissions:
   contents: read
@@ -28,14 +28,14 @@ jobs:
           filters: |
             bot:
               - 'apps/bot/**'
-              - 'deploy/discloud/bot.config'
+              - 'deploy/discloud/bot.*'
               - 'packages/**'
               - 'bun.lock'
               - 'package.json'
               - 'tsconfig.json'
             # api:
             #   - 'apps/api/**'
-            #   - 'deploy/discloud/api.config'
+            #   - 'deploy/discloud/api.*'
             #   - 'packages/**'
             #   - 'bun.lock'
             #   - 'package.json'
@@ -63,7 +63,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Preparar ${{ matrix.app }}
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Prepare ${{ matrix.app }}
         run: bash scripts/prepare-deploy.sh ${{ matrix.app }}
 
       - uses: discloud/deploy-action@v1

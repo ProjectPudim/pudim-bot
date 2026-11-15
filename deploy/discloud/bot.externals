@@ -1,0 +1,3 @@
+# Packages NOT bundled (native modules, e.g. canvas libs). One per line.
+# Each must be listed in some package.json of the repo (version is read from there).
+@napi-rs/canvas
