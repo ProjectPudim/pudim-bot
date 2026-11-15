@@ -8,7 +8,7 @@ export default {
   months: (value: number) => `${value} ${value === 1 ? 'mês' : 'meses'}`,
   years: (value: number) => `${value} ${value === 1 ? 'ano' : 'anos'}`,
   examples:
-    'Para indicar o tempo você pode usar assim: `30s`, `5m`, `1h 30m`, `2 dias`, `30 minutos e 10 segundos`.',
+    'Para indicar o tempo você pode usar assim: `30s`, `5m`, `5m30s`, `1h 30m`, `2 dias`, `30 minutos e 10 segundos`.',
   min: (value: string) => `O tempo mínimo é ${value}.`,
   max: (value: string) => `O tempo máximo é ${value}.`,
 }
