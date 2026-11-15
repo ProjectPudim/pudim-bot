@@ -1,0 +1,73 @@
+name: Deploy Discloud
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      app:
+        description: App para deploy
+        type: choice
+        options: [bot]   # adicione: api, website, dashboard...
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.pick.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name == 'push'
+        with:
+          filters: |
+            bot:
+              - 'apps/bot/**'
+              - 'deploy/discloud/bot.config'
+              - 'packages/**'
+              - 'bun.lock'
+              - 'package.json'
+              - 'tsconfig.json'
+            # api:
+            #   - 'apps/api/**'
+            #   - 'deploy/discloud/api.config'
+            #   - 'packages/**'
+            #   - 'bun.lock'
+            #   - 'package.json'
+            #   - 'tsconfig.json'
+
+      - id: pick
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo 'apps=["${{ inputs.app }}"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'apps=${{ steps.filter.outputs.changes }}' >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: changes
+    if: needs.changes.outputs.apps != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.changes.outputs.apps) }}
+    concurrency:
+      group: deploy-${{ matrix.app }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Preparar ${{ matrix.app }}
+        run: ./scripts/prepare-deploy.sh ${{ matrix.app }}
+
+      - uses: discloud/deploy-action@v1
+        with:
+          token: ${{ secrets.DISCLOUD_TOKEN }}
+          # .env do app, guardado em secret (ENV_BOT, ENV_API...)
+          env: ${{ secrets[format('ENV_{0}', matrix.app)] }}
