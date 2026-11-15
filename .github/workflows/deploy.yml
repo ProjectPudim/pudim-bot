@@ -64,7 +64,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Preparar ${{ matrix.app }}
-        run: ./scripts/prepare-deploy.sh ${{ matrix.app }}
+        run: bash scripts/prepare-deploy.sh ${{ matrix.app }}
 
       - uses: discloud/deploy-action@v1
         with:
