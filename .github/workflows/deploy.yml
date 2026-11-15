@@ -8,7 +8,7 @@ on:
       app:
         description: App para deploy
         type: choice
-        options: [bot]   # add: api, website, dashboard...
+        options: [bot] # add: api, website, dashboard...
 
 permissions:
   contents: read

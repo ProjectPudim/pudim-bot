@@ -1,8 +1,5 @@
-import { fileURLToPath } from 'node:url'
-
-const assetsUrl = new URL('../../assets/', import.meta.url)
+import { join } from 'node:path'
 
 export function getAssetPath(...segments: string[]): string {
-  const relativePath = segments.join('/')
-  return fileURLToPath(new URL(relativePath, assetsUrl))
+  return join(process.cwd(), 'assets', ...segments)
 }

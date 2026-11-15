@@ -1,10 +1,12 @@
-import { RedisClient } from 'bun'
+import Redis from 'ioredis'
+
+export type RedisClient = Redis
 
 let redis: RedisClient | undefined
 let connectionPromise: Promise<RedisClient> | undefined
 
 export async function connectRedis(url: string): Promise<RedisClient> {
-  if (redis?.connected) {
+  if (redis?.status === 'ready') {
     return redis
   }
 
@@ -13,14 +15,14 @@ export async function connectRedis(url: string): Promise<RedisClient> {
   }
 
   connectionPromise ??= (async () => {
-    const client = new RedisClient(url)
+    const client = new Redis(url, { lazyConnect: true })
 
     try {
       await client.connect()
       redis = client
       return client
     } catch (error) {
-      client.close()
+      client.disconnect()
       throw error
     }
   })().catch((error: unknown) => {
@@ -32,7 +34,7 @@ export async function connectRedis(url: string): Promise<RedisClient> {
 }
 
 export function getRedis(): RedisClient {
-  if (!redis?.connected) {
+  if (!redis || redis.status !== 'ready') {
     throw new Error('Redis is not connected')
   }
 
@@ -41,9 +43,9 @@ export function getRedis(): RedisClient {
 
 export async function createRedisSubscriber(): Promise<RedisClient> {
   const client = getRedis()
-  const subscriber = await client.duplicate()
+  const subscriber = client.duplicate()
 
-  if (!subscriber.connected) {
+  if (subscriber.status !== 'ready') {
     await subscriber.connect()
   }
 
@@ -54,7 +56,7 @@ export async function disconnectRedis(): Promise<void> {
   connectionPromise = undefined
 
   if (redis) {
-    redis.close()
+    redis.disconnect()
     redis = undefined
   }
 }

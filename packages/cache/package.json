@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "@pudim/config": "workspace:*"
+  },
+  "dependencies": {
+    "ioredis": "^6.0.0"
   }
 }
