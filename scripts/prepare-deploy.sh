@@ -45,9 +45,12 @@ rsync -a --exclude='node_modules' --exclude='.env*' --exclude='Dockerfile' \
 
 bun build "$SRC/$ENTRY" --target=node --outfile="$OUT/$OUT_JS" ${EXT_ARGS[@]+"${EXT_ARGS[@]}"}
 
-# Minimal package.json: ESM + externals (Discloud installs them), versions from the repo
+# Production manifest derived from the app package.json: Discloud uses npm start,
+# so keep a start script pointing at the bundled entry point. Only externals
+# (native modules) are installed at runtime; workspace packages are bundled.
 bun -e '
-const [out, ...names] = process.argv.slice(1);
+const [out, appPkgPath, ...names] = process.argv.slice(1);
+const appPkg = await Bun.file(appPkgPath).json();
 const pkgs = [];
 for (const g of ["package.json", "apps/*/package.json", "packages/*/package.json"])
   for (const f of new Bun.Glob(g).scanSync(".")) pkgs.push(await Bun.file(f).json());
@@ -57,8 +60,15 @@ for (const n of names) {
   if (!v) throw new Error(`external "${n}" not found in any package.json`);
   dependencies[n] = v;
 }
-await Bun.write(`${out}/package.json`, JSON.stringify({ type: "module", dependencies }, null, 2));
-' "$OUT" ${PKGS[@]+"${PKGS[@]}"}
+await Bun.write(`${out}/package.json`, JSON.stringify({
+  name: appPkg.name,
+  version: appPkg.version,
+  type: "module",
+  main: "src/index.js",
+  scripts: { start: "node --env-file=.env src/index.js" },
+  dependencies,
+}, null, 2));
+' "$OUT" "$SRC/package.json" ${PKGS[@]+"${PKGS[@]}"}
 
 cp "$CONFIG" "$OUT/discloud.config"
 
