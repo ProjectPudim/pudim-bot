@@ -1,10 +1,10 @@
-import { join } from 'node:path'
 import { createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas'
 import { images } from '#bot/utils/constants'
 import { getAssetPath } from '../assets'
 
 GlobalFonts.registerFromPath(
-  getAssetPath('fonts', 'Quicksand-Regular.ttf'), 'Quicksand'
+  getAssetPath('fonts', 'Quicksand-Regular.ttf'),
+  'Quicksand',
 )
 
 type ShipImage = Awaited<ReturnType<typeof loadImage>>
@@ -84,9 +84,7 @@ export async function generateShipImage(
   const [avatar1, avatar2, centerImg] = await Promise.all([
     loadImageSafe(url1),
     loadImageSafe(url2),
-    loadImage(getAssetPath('images', centerImagePath),).catch(
-      () => null,
-    ),
+    loadImage(getAssetPath('images', centerImagePath)).catch(() => null),
   ])
 
   ctx.drawImage(avatar1, 0, 0, 300, 300)
