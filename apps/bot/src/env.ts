@@ -10,5 +10,6 @@ export const env = await validateEnv(
     VALKEY_URL: z.string('The Valkey URl is required').min(1),
 
     FELIPW_API_URL: z.string().optional(),
+    ROLEPLAY_API_URL: z.string().optional(),
   }),
 )

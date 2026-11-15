@@ -4,7 +4,7 @@ import { config } from './config'
 export const Category = {
   Utilities: 'utility',
   // Moderation: 'moderation',
-  // Fun: 'fun',
+  Fun: 'fun',
   // Settings: 'settings',
 } as const
 
@@ -47,16 +47,16 @@ export const categories = {
   //   },
   // },
 
-  // [Category.Fun]: {
-  //   labels: {
-  //     'en-US': 'Fun',
-  //     'pt-BR': 'Diversão',
-  //   },
-  //   descriptions: {
-  //     'en-US': 'Fun commands and games.',
-  //     'pt-BR': 'Comandos e jogos divertidos.',
-  //   },
-  // },
+  [Category.Fun]: {
+    labels: {
+      'en-US': 'Fun',
+      'pt-BR': 'Diversão',
+    },
+    descriptions: {
+      'en-US': 'Fun commands and games.',
+      'pt-BR': 'Comandos e jogos divertidos.',
+    },
+  },
 
   // [Category.Settings]: {
   //   labels: {

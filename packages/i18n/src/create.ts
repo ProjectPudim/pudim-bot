@@ -112,11 +112,16 @@ export function createI18n<
       render(locale, key, args)) as TranslateFunction<Default>
   }
 
+  function getDictionary(locale?: string | null): Locales[Locale] {
+    return locales[resolveLocale(locale)]
+  }
+
   return {
     defaultLocale,
     locales: Object.keys(locales) as Locale[],
     resolveLocale,
     translate,
     getTranslator,
+    getDictionary,
   }
 }

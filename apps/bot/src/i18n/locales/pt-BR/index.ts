@@ -1,3 +1,10 @@
+import eightball from './commands/fun/8ball'
+import choose from './commands/fun/choose'
+import coinflip from './commands/fun/coinflip'
+import dice from './commands/fun/dice'
+import reverse from './commands/fun/reverse'
+import roleplay from './commands/fun/roleplay'
+import ship from './commands/fun/ship'
 import avatar from './commands/utility/avatar'
 import botinfo from './commands/utility/botinfo'
 import botinvite from './commands/utility/botinvite'
@@ -31,6 +38,13 @@ export default {
     serverinfo,
     userbanner,
     userinfo,
+    roleplay,
+    '8ball': eightball,
+    choose,
+    coinflip,
+    dice,
+    reverse,
+    ship,
   },
   common: { and: 'e', permissions, duration, invalid, notFound },
 }
