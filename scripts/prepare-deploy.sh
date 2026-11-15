@@ -6,6 +6,9 @@
 #
 # Bundles the app with bun (workspace packages + aliases inlined) into a
 # Node-compatible build and places it, with discloud.config, in the output dir.
+# Files under src/fluxer/ (commands, events) are loaded at RUNTIME by the
+# framework (glob relative to the entry file), so each one is emitted as its own
+# file at the same path; shared code is split into chunks (a single registry).
 #   default          -> replaces the workspace with the build (CI only!)
 #   DEPLOY_OUT=<dir> -> writes the build to <dir>, deletes nothing
 set -euo pipefail
@@ -33,6 +36,14 @@ if [ -f "$EXTERNALS" ]; then
   for p in ${PKGS[@]+"${PKGS[@]}"}; do EXT_ARGS+=(--external "$p"); done
 fi
 
+# Runtime-loaded modules (framework glob ./fluxer/**), one output file each
+DYN=()
+if [ -d "$SRC/src/fluxer" ]; then
+  mapfile -t DYN < <(find "$SRC/src/fluxer" -name '*.ts' ! -name '*.d.ts' \
+    ! -name '_*' ! -name '*.test.ts' ! -name '*.spec.ts' ! -path '*/_*/*' \
+    ! -path "$SRC/src/fluxer/index.ts" | sort)
+fi
+
 OUT="${DEPLOY_OUT:-$(mktemp -d)}"
 rm -rf "$OUT" && mkdir -p "$OUT"
 
@@ -43,7 +54,10 @@ rsync -a --exclude='node_modules' --exclude='.env*' --exclude='Dockerfile' \
   --exclude='package.json' --exclude='tsconfig*.json' --exclude='*.ts' --exclude='*.tsx' \
   "$SRC/" "$OUT/"
 
-bun build "$SRC/$ENTRY" --target=node --outfile="$OUT/$OUT_JS" ${EXT_ARGS[@]+"${EXT_ARGS[@]}"}
+bun build "$SRC/$ENTRY" ${DYN[@]+"${DYN[@]}"} --target=node --splitting --root="$SRC" \
+  --outdir="$OUT" ${EXT_ARGS[@]+"${EXT_ARGS[@]}"}
+[ -f "$OUT/$OUT_JS" ] || { echo "Error: build did not produce $OUT_JS"; exit 1; }
+echo "Runtime-loaded modules: ${#DYN[@]}"
 
 # Production manifest derived from the app package.json: Discloud uses npm start,
 # so keep a start script pointing at the bundled entry point. Only externals
