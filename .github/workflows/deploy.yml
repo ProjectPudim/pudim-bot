@@ -69,5 +69,5 @@ jobs:
       - uses: discloud/deploy-action@v1
         with:
           token: ${{ secrets.DISCLOUD_TOKEN }}
-          # .env do app, guardado em secret (ENV_BOT, ENV_API...)
           env: ${{ secrets[format('ENV_{0}', matrix.app)] }}
+          env_file: .env
