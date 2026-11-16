@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createBackup } from './backup'
-import { loadKey } from './crypto'
+import { sha256File as hashFile, loadKey } from './crypto'
 import { loadEnv, parseInterval } from './env'
 import { sendBackupWebhook, sendFailureOrStatusNotification } from './webhook'
 
@@ -37,8 +37,7 @@ function writePending(items: string[]): void {
 }
 
 async function sha256File(path: string): Promise<string> {
-  const { sha256 } = await import('./crypto')
-  return sha256(Buffer.from(await Bun.file(path).arrayBuffer()))
+  return hashFile(path)
 }
 
 async function retryPendingUploads(): Promise<void> {
@@ -155,6 +154,7 @@ async function main(): Promise<void> {
 
   try {
     loadKey(env.encryptionKey)
+    parseInterval(env.interval)
   } catch (error) {
     console.error(
       JSON.stringify({ status: 'invalid_configuration', error: String(error) }),

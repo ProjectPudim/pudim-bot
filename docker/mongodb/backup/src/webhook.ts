@@ -94,10 +94,19 @@ export async function sendBackupWebhook(
       form.append('payload_json', JSON.stringify({ embeds: [embed] }))
       form.append('files[0]', new Blob([fileBuffer]), result.filename)
 
-      const response = await fetch(env.webhookUrl, {
-        method: 'POST',
-        body: form,
-      })
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 30_000)
+
+      let response: Response
+      try {
+        response = await fetch(env.webhookUrl, {
+          method: 'POST',
+          body: form,
+          signal: controller.signal,
+        })
+      } finally {
+        clearTimeout(timeout)
+      }
 
       if (response.ok) {
         return
@@ -138,21 +147,29 @@ export async function sendFailureOrStatusNotification(
   }
 
   try {
-    await fetch(env.webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        embeds: [
-          {
-            title: 'Backup do MongoDB',
-            color: 0xed4245,
-            description,
-            fields,
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      }),
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 30_000)
+
+    try {
+      await fetch(env.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embeds: [
+            {
+              title: 'Backup do MongoDB',
+              color: 0xed4245,
+              description,
+              fields,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        }),
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeout)
+    }
   } catch {
     // Never let notification delivery mask the original failure.
   }

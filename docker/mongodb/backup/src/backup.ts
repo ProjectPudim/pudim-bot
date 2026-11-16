@@ -3,6 +3,7 @@ import {
   mkdirSync,
   openSync,
   readdirSync,
+  readFileSync,
   renameSync,
   rmSync,
   statSync,
@@ -11,7 +12,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { encryptBuffer, loadKey, sha256 } from './crypto'
+import { encryptFile, loadKey, sha256File } from './crypto'
 import type { BackupEnv } from './env'
 
 export interface BackupResult {
@@ -26,14 +27,38 @@ function timestampForFilename(date: Date): string {
   return date.toISOString().slice(0, 19).replace(/:/g, '-') + 'Z'
 }
 
-function acquireLock(lockPath: string): void {
+function isProcessAlive(pid: number): boolean {
   try {
-    const fd = openSync(lockPath, 'wx')
-    writeFileSync(fd, String(process.pid))
-    closeSync(fd)
+    process.kill(pid, 0)
+    return true
   } catch {
-    throw new Error('another backup process is already running')
+    return false
   }
+}
+
+function acquireLock(lockPath: string): void {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const fd = openSync(lockPath, 'wx')
+      writeFileSync(fd, String(process.pid))
+      closeSync(fd)
+      return
+    } catch {
+      try {
+        const pid = Number(readFileSync(lockPath, 'utf8').trim())
+        if (Number.isFinite(pid) && !isProcessAlive(pid)) {
+          unlinkSync(lockPath)
+          continue
+        }
+      } catch {
+        // Ignore unreadable locks and treat them as active.
+      }
+
+      throw new Error('another backup process is already running')
+    }
+  }
+
+  throw new Error('another backup process is already running')
 }
 
 function releaseLock(lockPath: string): void {
@@ -66,23 +91,58 @@ async function runMongodump(uri: string, archivePath: string): Promise<void> {
   }
 }
 
-export function applyRetention(dir: string, retentionDays: number): void {
+export function applyRetention(
+  dir: string,
+  retentionDays: number,
+  pending: string[] = [],
+): void {
   const cutoff = Date.now() - retentionDays * 86_400_000
+  const pendingSet = new Set(pending)
 
-  for (const entry of readdirSync(dir)) {
-    if (!entry.endsWith('.enc')) {
+  const candidates = readdirSync(dir)
+    .filter((entry) => entry.endsWith('.enc'))
+    .map((entry) => {
+      try {
+        return { entry, mtime: statSync(join(dir, entry)).mtimeMs }
+      } catch {
+        return null
+      }
+    })
+    .filter((item): item is { entry: string; mtime: number } => item !== null)
+    .sort((a, b) => b.mtime - a.mtime)
+
+  // Keep at least the newest valid backup.
+  for (let index = 0; index < candidates.length; index += 1) {
+    const candidate = candidates[index]
+
+    if (pendingSet.has(candidate.entry)) {
       continue
     }
 
-    const fullPath = join(dir, entry)
-    try {
-      const stats = statSync(fullPath)
-      if (stats.mtimeMs < cutoff) {
-        unlinkSync(fullPath)
-      }
-    } catch {
-      // Ignore files that disappear between listing and deletion.
+    if (index === 0) {
+      continue
     }
+
+    if (candidate.mtime < cutoff) {
+      try {
+        unlinkSync(join(dir, candidate.entry))
+      } catch {
+        // Ignore files that disappear between listing and deletion.
+      }
+    }
+  }
+}
+
+function readPendingNames(dir: string): string[] {
+  try {
+    const parsed = JSON.parse(
+      readFileSync(join(dir, '.pending-uploads.json'), 'utf8'),
+    )
+    return Array.isArray(parsed)
+      ? parsed.filter((item) => typeof item === 'string')
+      : []
+  } catch {
+    return []
   }
 }
 
@@ -112,28 +172,34 @@ export async function createBackup(env: BackupEnv): Promise<BackupResult> {
     const finalPath = join(env.dir, filename)
     const tempFinal = `${finalPath}.tmp`
 
-    await runMongodump(env.mongodbUri, tempArchive)
-
-    const plaintext = Buffer.from(await Bun.file(tempArchive).arrayBuffer())
-    const encrypted = encryptBuffer(plaintext, key)
-
-    await Bun.write(tempFinal, encrypted)
-    renameSync(tempFinal, finalPath)
-
     try {
-      rmSync(tempArchive, { force: true })
-    } catch {
-      // Ignore temporary file cleanup errors.
-    }
+      await runMongodump(env.mongodbUri, tempArchive)
+      await encryptFile(tempArchive, tempFinal, key)
+      renameSync(tempFinal, finalPath)
 
-    applyRetention(env.dir, env.retentionDays)
+      const size = (await import('node:fs')).statSync(finalPath).size
+      const hash = await sha256File(finalPath)
 
-    return {
-      filename,
-      path: finalPath,
-      size: encrypted.length,
-      sha256: sha256(encrypted),
-      createdAt: startedAt.toISOString(),
+      applyRetention(env.dir, env.retentionDays, readPendingNames(env.dir))
+
+      return {
+        filename,
+        path: finalPath,
+        size,
+        sha256: hash,
+        createdAt: startedAt.toISOString(),
+      }
+    } finally {
+      try {
+        rmSync(tempArchive, { force: true })
+      } catch {
+        // Ignore temporary file cleanup errors.
+      }
+      try {
+        rmSync(tempFinal, { force: true })
+      } catch {
+        // Ignore temporary file cleanup errors.
+      }
     }
   } finally {
     releaseLock(lockPath)

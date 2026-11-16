@@ -70,10 +70,23 @@ async function main(): Promise<void> {
   const tempArchive = join(tmpdir(), `restore-${Date.now()}.archive.gz`)
   writeFileSync(tempArchive, decrypted)
 
+  let target = uri
+  try {
+    const parsed = new URL(uri)
+    target = `${parsed.hostname}${parsed.pathname || ''}`
+  } catch {
+    // Keep the original value if the URI cannot be parsed.
+  }
+
+  console.info(`Restore target: ${target}`)
+  console.info(
+    'Existing collections are preserved; mongorestore will merge into them.',
+  )
+
   try {
     const result = spawnSync(
       'mongorestore',
-      [`--uri=${uri}`, `--archive=${tempArchive}`, '--gzip', '--drop'],
+      [`--uri=${uri}`, `--archive=${tempArchive}`, '--gzip'],
       { stdio: 'inherit' },
     )
 

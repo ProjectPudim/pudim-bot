@@ -187,11 +187,23 @@ Nunca restaure automaticamente em produção.
 
 Arquivos locais mais antigos que o período configurado são removidos. Arquivos incompletos não são considerados válidos.
 
+## Scripts adicionais
+
+- `backup:up`: inicia apenas o serviço de backup.
+- `backup:down`: para o serviço de backup.
+- `backup:logs`: exibe logs do backup.
+
 ## GitHub Actions
 
 O workflow `ci.yml` executa lint, typecheck e format check.
 
 O workflow `docker.yml` constrói e publica imagens no GHCR para `linux/amd64`.
+
+Pushes na `main` publicam `latest`. Pull requests apenas constroem. Tags de release publicam versões.
+
+## Hospedagem na Altare
+
+Prepare serviços independentes para bot, MongoDB, Valkey e backup. Configure `MONGODB_URI` e `VALKEY_URL` com endpoints externos. Para Valkey gerenciado com TLS, utilize `rediss://`. Não exponha MongoDB ou Valkey publicamente.
 
 ## Hospedagem na Altare
 

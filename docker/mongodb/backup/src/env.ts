@@ -32,24 +32,40 @@ export function loadEnv(): BackupEnv {
 export function parseInterval(value: string): number {
   const match = value.trim().match(/^(\d+)\s*(ms|s|m|h|d)?$/i)
   if (!match) {
-    return 3_600_000
+    throw new Error(`invalid backup interval: ${value}`)
   }
 
   const amount = Number(match[1])
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error(`invalid backup interval: ${value}`)
+  }
+
   const unit = (match[2] ?? 's').toLowerCase()
+  let milliseconds: number
 
   switch (unit) {
     case 'ms':
-      return amount
+      milliseconds = amount
+      break
     case 's':
-      return amount * 1_000
+      milliseconds = amount * 1_000
+      break
     case 'm':
-      return amount * 60_000
+      milliseconds = amount * 60_000
+      break
     case 'h':
-      return amount * 3_600_000
+      milliseconds = amount * 3_600_000
+      break
     case 'd':
-      return amount * 86_400_000
+      milliseconds = amount * 86_400_000
+      break
     default:
-      return amount * 1_000
+      throw new Error(`invalid backup interval unit: ${value}`)
   }
+
+  if (milliseconds < 60_000) {
+    throw new Error(`backup interval must be at least 60 seconds: ${value}`)
+  }
+
+  return milliseconds
 }

@@ -5,11 +5,20 @@ let redisUrl: string | undefined
 let connectionPromise: Promise<RedisClient> | undefined
 const clients = new Set<RedisClient>()
 
-function redisOptions() {
+function redisOptions(url: string) {
+  let tls: boolean | undefined
+
+  try {
+    tls = new URL(url).protocol === 'rediss:'
+  } catch {
+    tls = false
+  }
+
   return {
     autoReconnect: true,
     maxRetries: 20,
     connectionTimeout: 10_000,
+    ...(tls ? { tls: true } : {}),
   }
 }
 
@@ -25,7 +34,7 @@ export async function connectRedis(url: string): Promise<RedisClient> {
   redisUrl = url
 
   connectionPromise ??= (async () => {
-    const client = new Bun.RedisClient(url, redisOptions())
+    const client = new Bun.RedisClient(url, redisOptions(url))
 
     try {
       await client.connect()
@@ -63,7 +72,7 @@ export async function createRedisSubscriber(): Promise<RedisClient> {
     throw new Error('VALKEY_URL is not configured')
   }
 
-  const client = new Bun.RedisClient(url, redisOptions())
+  const client = new Bun.RedisClient(url, redisOptions(url))
 
   try {
     await client.connect()
