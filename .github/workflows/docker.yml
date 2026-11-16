@@ -25,11 +25,12 @@ jobs:
         include:
           - name: bot
             context: .
-            dockerfile: apps/bot/Dockerfile
+            dockerfile: ./apps/bot/Dockerfile
             image: ghcr.io/${{ github.repository_owner }}/pudim-bot
+
           - name: mongodb-backup
-            context: .
-            dockerfile: docker/mongodb/backup/Dockerfile
+            context: ./docker/mongodb/backup
+            dockerfile: ./docker/mongodb/backup/Dockerfile
             image: ghcr.io/${{ github.repository_owner }}/pudim-mongodb-backup
     steps:
       - uses: actions/checkout@v5
