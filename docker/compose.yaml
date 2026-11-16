@@ -1,0 +1,124 @@
+name: pudim
+
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: pudim-mongodb
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+    ports:
+      - '127.0.0.1:${MONGODB_PORT:-27017}:27017'
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongodb/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'mongosh --quiet "mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@127.0.0.1:27017/admin?authSource=admin" --eval "db.adminCommand(''ping'').ok" >/dev/null 2>&1',
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    networks:
+      - pudim
+
+  valkey:
+    image: valkey/valkey:8.1
+    container_name: pudim-valkey
+    restart: unless-stopped
+    env_file:
+      - .env
+    command:
+      [
+        'valkey-server',
+        '/etc/valkey/valkey.conf',
+        '--requirepass',
+        '${VALKEY_PASSWORD}',
+      ]
+    ports:
+      - '127.0.0.1:${VALKEY_PORT:-6379}:6379'
+    volumes:
+      - valkey_data:/data
+      - ./valkey/valkey.conf:/etc/valkey/valkey.conf:ro
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'valkey-cli -a "${VALKEY_PASSWORD}" ping | grep -q PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - pudim
+
+  bot:
+    profiles:
+      - full
+    image: ${PUDIM_BOT_IMAGE:-ghcr.io/projectpudim/pudim-bot:latest}
+    build:
+      context: ..
+      dockerfile: apps/bot/Dockerfile
+    container_name: pudim-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      BOT_TOKEN: ${BOT_TOKEN}
+      MONGODB_URI: ${MONGODB_URI}
+      VALKEY_URL: ${VALKEY_URL}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    networks:
+      - pudim
+
+  mongodb-backup:
+    profiles:
+      - full
+    image: ${PUDIM_BACKUP_IMAGE:-ghcr.io/projectpudim/pudim-mongodb-backup:latest}
+    build:
+      context: ./mongodb/backup
+      dockerfile: Dockerfile
+    container_name: pudim-mongodb-backup
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGODB_URI: mongodb://${MONGO_BACKUP_USERNAME}:${MONGO_BACKUP_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=${MONGO_DB}
+      MONGODB_BACKUP_ENABLED: ${MONGODB_BACKUP_ENABLED:-true}
+      MONGODB_BACKUP_INTERVAL: ${MONGODB_BACKUP_INTERVAL:-1h}
+      MONGODB_BACKUP_RETENTION_DAYS: ${MONGODB_BACKUP_RETENTION_DAYS:-7}
+      MONGODB_BACKUP_DIR: ${MONGODB_BACKUP_DIR:-/data/backups}
+      MONGODB_BACKUP_NAME: ${MONGODB_BACKUP_NAME:-pudim}
+      MONGODB_BACKUP_MAX_UPLOAD_BYTES: ${MONGODB_BACKUP_MAX_UPLOAD_BYTES:-26214400}
+      MONGODB_BACKUP_WEBHOOK_URL: ${MONGODB_BACKUP_WEBHOOK_URL:-}
+      MONGODB_BACKUP_ENCRYPTION_KEY: ${MONGODB_BACKUP_ENCRYPTION_KEY:-}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - mongodb_backups:/data/backups
+    networks:
+      - pudim
+
+volumes:
+  mongodb_data:
+  valkey_data:
+  mongodb_backups:
+
+networks:
+  pudim:
+    name: pudim-network

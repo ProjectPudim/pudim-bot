@@ -1,0 +1,31 @@
+# Dependencies and build output
+node_modules
+**/node_modules
+dist
+out
+*.tgz
+
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Git and editor files
+.git
+.gitignore
+.vscode
+.idea
+
+# Logs and caches
+logs
+*.log
+.cache
+*.tsbuildinfo
+
+# Docker local data
+docker/mongodb/backup/data
+docker/**/*.sqlite
+
+# Test artifacts
+coverage
