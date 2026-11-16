@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint src"
+    "lint": "eslint src"
   },
   "devDependencies": {
     "@pudim/config": "workspace:*"

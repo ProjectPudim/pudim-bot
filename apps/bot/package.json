@@ -7,7 +7,7 @@
     "dev": "bun --watch src/index.ts",
     "start": "bun src/index.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "bunx oxlint src"
+    "lint": "eslint src"
   },
   "dependencies": {
     "@fluxerjs/core": "^3.3.0",
