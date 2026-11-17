@@ -1,12 +1,24 @@
-import { AttachmentBuilder, type User } from '@fluxerjs/core'
+import { AttachmentBuilder } from '@fluxerjs/core'
+import { Category, images } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { generateShipImage } from '#bot/utils/canvas/ship'
-import { images } from '#bot/utils/constants'
-import { parseTargetId } from '#bot/utils/user'
+import { generateShipImage } from '#bot/modules/canvas/ship'
+import {
+  getUserAvatarUrl,
+  parseUserId,
+  resolveUser,
+  safeReplyMentions,
+} from '#bot/utils'
 
-const USAGE = '{prefix}ship <@user|id> [@user|id]'
+type ShipResultKey =
+  | 'selfLove'
+  | 'soulmates'
+  | 'perfect'
+  | 'potential'
+  | 'friends'
+  | 'low'
+  | 'veryLow'
 
-function getShipName(name1: string, name2: string): string {
+function createShipName(name1: string, name2: string): string {
   const first = name1.trim()
   const second = name2.trim()
   if (!first) return second
@@ -14,22 +26,13 @@ function getShipName(name1: string, name2: string): string {
 
   const part1 = first.slice(0, Math.ceil(first.length / 2))
   const part2 = second.slice(Math.floor(second.length / 2))
-
   return (part1 + part2).trim() || `${first}${second}`
 }
 
-function avatarUrl(user: User): string {
-  if (!user.avatar) return images.defaultAvatar
-  const animated = user.avatar.startsWith('a_')
-  return (
-    user.avatarURL({
-      size: 512,
-      extension: animated ? 'gif' : 'png',
-    }) ?? images.defaultAvatar
-  )
-}
-
-function messageKey(percentage: number, sameUser: boolean): string {
+function getShipResultKey(
+  percentage: number,
+  sameUser: boolean,
+): ShipResultKey {
   if (sameUser) return 'selfLove'
   if (percentage === 100) return 'soulmates'
   if (percentage >= 91) return 'perfect'
@@ -46,17 +49,17 @@ export default createCommand({
     'pt-BR': 'Faz ship entre dois usuários.',
     'es-ES': 'Hace ship entre dos usuarios.',
   },
-  category: 'fun',
-  usage: USAGE,
+  category: Category.Fun,
+  usage: '{prefix}ship <@user|id> [@user|id]',
   aliases: ['shipname'],
-  cooldown: { duration: 5000, scope: 'user' },
+  cooldown: { duration: 5_000, scope: 'user' },
   async run(ctx) {
-    const { t, args, author, client } = ctx
+    const { t, args, author, client, prefix } = ctx
 
-    const firstId = parseTargetId(args[0])
+    const firstId = parseUserId(args[0])
     if (!firstId) {
       await ctx.reply({
-        content: t('commands.ship.messages.invalidUsage', ctx.prefix),
+        content: t('commands.ship.messages.invalidUsage', prefix),
       })
       return
     }
@@ -64,7 +67,7 @@ export default createCommand({
     const secondRaw = args[1]?.trim()
     let secondId = author.id
     if (secondRaw) {
-      const parsedSecond = parseTargetId(secondRaw)
+      const parsedSecond = parseUserId(secondRaw)
       if (!parsedSecond) {
         await ctx.reply({
           content: t('common.invalid.messages.user'),
@@ -74,11 +77,7 @@ export default createCommand({
       secondId = parsedSecond
     }
 
-    const user1: User | null =
-      firstId === author.id
-        ? author
-        : await client.users.fetch(firstId).catch(() => null)
-
+    const user1 = await resolveUser(client, firstId, author)
     if (!user1) {
       await ctx.reply({
         content: t('common.notFound.messages.user', args[0]?.trim() || firstId),
@@ -86,13 +85,8 @@ export default createCommand({
       return
     }
 
-    const user2: User | null =
-      secondId === author.id
-        ? author
-        : secondId === firstId
-          ? user1
-          : await client.users.fetch(secondId).catch(() => null)
-
+    const user2 =
+      secondId === firstId ? user1 : await resolveUser(client, secondId, author)
     if (!user2) {
       await ctx.reply({
         content: t('common.notFound.messages.user', secondRaw || secondId),
@@ -101,25 +95,22 @@ export default createCommand({
     }
 
     const sameUser = user1.id === user2.id
-
     const percentage = sameUser
       ? 100
       : Number((BigInt(user1.id) + BigInt(user2.id)) % 101n)
 
-    const shipName = getShipName(user1.username, user2.username)
-    const translate = t as (key: string, ...args: unknown[]) => string
-    const selectedMessage = translate(
-      `commands.ship.results.${messageKey(percentage, sameUser)}`,
+    const shipName = createShipName(user1.username, user2.username)
+    const selectedMessage = t(
+      `commands.ship.results.${getShipResultKey(percentage, sameUser)}`,
     )
 
     const buffer = await generateShipImage(
-      avatarUrl(user1),
-      avatarUrl(user2),
+      getUserAvatarUrl(user1, { fallback: true }) ?? images.defaultAvatar,
+      getUserAvatarUrl(user2, { fallback: true }) ?? images.defaultAvatar,
       percentage,
     )
 
     const attachment = new AttachmentBuilder(buffer, { name: 'ship.png' })
-
     const content = [
       `## ${t('commands.ship.title')}`,
       t('commands.ship.percentage', percentage),
@@ -130,12 +121,7 @@ export default createCommand({
     await ctx.reply({
       content,
       files: [attachment],
-      allowedMentions: {
-        parse: [],
-        users: [author.id],
-        roles: [],
-        repliedUser: true,
-      },
+      allowedMentions: safeReplyMentions(author.id),
     })
   },
 })

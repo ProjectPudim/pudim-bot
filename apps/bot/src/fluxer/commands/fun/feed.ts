@@ -1,19 +1,11 @@
-import { createCommand } from '#bot/fluxer'
-import { roleplayManager } from '#bot/managers'
+import { createRoleplayCommand } from '#bot/modules/roleplay'
 
-const USAGE = '{prefix}feed <@user|id>'
-
-export default createCommand({
-  name: 'feed',
+export default createRoleplayCommand({
+  action: 'feed',
   description: 'Feeds a user.',
   descriptionLocalizations: {
     'pt-BR': 'Alimenta um usuário.',
     'es-ES': 'Alimenta a un usuario.',
   },
-  category: 'fun',
   aliases: ['nom', 'comida', 'alimentar'],
-  usage: USAGE,
-  async run(ctx) {
-    await roleplayManager.command(ctx, 'feed', USAGE)
-  },
 })

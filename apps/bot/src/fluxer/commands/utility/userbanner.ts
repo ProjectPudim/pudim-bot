@@ -1,10 +1,13 @@
+import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { fetchFluxerProfile } from '#bot/utils/apis/felipw'
-import { colors } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
-import { parseTargetId } from '#bot/utils/user'
-
-const USAGE = '{prefix}userbanner [@user|id]'
+import { fetchFluxerProfile } from '#bot/services'
+import {
+  Embed,
+  getUserBannerUrl,
+  parseUserId,
+  resolveUser,
+  safeReplyMentions,
+} from '#bot/utils'
 
 export default createCommand({
   name: 'userbanner',
@@ -13,56 +16,34 @@ export default createCommand({
     'pt-BR': 'Mostra o banner de um usuário.',
     'es-ES': 'Muestra el banner de un usuario.',
   },
-  category: 'utility',
-  usage: USAGE,
+  category: Category.Utilities,
+  usage: '{prefix}userbanner [@user|id]',
   aliases: ['banner'],
   async run(ctx) {
     const { t, args, author, client } = ctx
+    const raw = args[0]?.trim()
+    const targetId = raw ? parseUserId(raw) : author.id
 
-    let targetId = parseTargetId(args[0])
-    if (args[0] && !targetId) {
+    if (!targetId) {
       await ctx.reply({
         content: t('common.invalid.messages.user'),
       })
       return
     }
-    if (!targetId) targetId = author.id
 
-    const user =
-      targetId === author.id
-        ? author
-        : await client.users.fetch(targetId).catch(() => null)
-
-    if (!user && targetId !== author.id) {
-      // Still allow API fallback below.
-    }
-
-    const apiProfile = await fetchFluxerProfile(targetId)
-
-    const username = user?.username ?? apiProfile?.username ?? targetId
-
-    const animated =
-      (user?.banner ?? apiProfile?.profile?.banner)?.startsWith('a_') ?? false
-    const bannerUrl = user?.banner
-      ? (user.bannerURL({
-          size: 1024,
-          extension: animated ? 'gif' : 'png',
-        }) ?? null)
-      : (apiProfile?.profile?.bannerUrl ??
-        (apiProfile?.profile?.banner
-          ? `https://fluxerusercontent.com/banners/${targetId}/${apiProfile.profile.banner}.${animated ? 'gif' : 'png'}?size=1024`
-          : null))
+    const [user, apiProfile] = await Promise.all([
+      resolveUser(client, targetId, author),
+      fetchFluxerProfile(targetId),
+    ])
 
     if (!user && !apiProfile) {
       await ctx.reply({
-        content: t(
-          'common.notFound.messages.user',
-          args[0]?.trim() || targetId,
-        ),
+        content: t('common.notFound.messages.user', raw || targetId),
       })
       return
     }
 
+    const bannerUrl = getUserBannerUrl(targetId, user, apiProfile, 1024)
     if (!bannerUrl) {
       await ctx.reply({
         content: t('commands.userbanner.messages.noBanner', targetId),
@@ -70,19 +51,18 @@ export default createCommand({
       return
     }
 
+    const username = user?.username ?? apiProfile?.username ?? targetId
     const embed = Embed({
       title: t('commands.userbanner.title', username),
+      description: t('commands.userbanner.openInBrowser', bannerUrl),
       color: colors.primary,
       image: bannerUrl,
-      footer: {
-        text: `ID: ${targetId}`,
-      },
+      footer: { text: `ID: ${targetId}` },
     })
-
-    embed.setDescription(t('commands.userbanner.openInBrowser', bannerUrl))
 
     await ctx.reply({
       embeds: [embed],
+      allowedMentions: safeReplyMentions(author.id),
     })
   },
 })

@@ -1,67 +1,13 @@
 import { Invite } from '@fluxerjs/core'
+import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { colors } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
-
-const USAGE = '{prefix}inviteinfo <invite|code>'
-
-const RECOGNIZED_HOSTS = new Set([
-  'fluxer.gg',
-  'www.fluxer.gg',
-  'fluxer.com',
-  'www.fluxer.com',
-  'web.fluxer.app',
-])
-
-const INVITE_CODE_PATTERN = /^[a-zA-Z0-9-]{2,}$/
-
-function extractInviteCode(input: string): string | null {
-  const trimmed = input.trim()
-
-  if (!trimmed) return null
-
-  if (INVITE_CODE_PATTERN.test(trimmed)) {
-    return trimmed
-  }
-
-  try {
-    const url = new URL(
-      /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`,
-    )
-
-    if (!RECOGNIZED_HOSTS.has(url.hostname.toLowerCase())) {
-      return null
-    }
-
-    const segments = url.pathname.split('/').filter(Boolean)
-
-    if (segments.length === 1) {
-      const code = segments[0]
-
-      return code && INVITE_CODE_PATTERN.test(code) ? code : null
-    }
-
-    if (segments.length === 2) {
-      const [prefix, code] = segments
-
-      if (
-        prefix?.toLowerCase() === 'invite' &&
-        code &&
-        INVITE_CODE_PATTERN.test(code)
-      ) {
-        return code
-      }
-    }
-
-    return null
-  } catch {
-    return null
-  }
-}
-
-function toTimestamp(date: Date): number {
-  return Math.floor(date.getTime() / 1000)
-}
+import {
+  Embed,
+  extractInviteCode,
+  formatTimestampPair,
+  formatUserTag,
+  getSnapshotGuildIconUrl,
+} from '#bot/utils'
 
 export default createCommand({
   name: 'inviteinfo',
@@ -70,13 +16,11 @@ export default createCommand({
     'pt-BR': 'Mostra informações sobre um convite.',
     'es-ES': 'Muestra información sobre una invitación.',
   },
-  category: 'utility',
-  usage: USAGE,
+  category: Category.Utilities,
+  usage: '{prefix}inviteinfo <invite|code>',
   aliases: ['invite'],
-
   async run(ctx) {
-    const { t, args, client } = ctx
-
+    const { t, args, client, logger } = ctx
     const input = args.join(' ').trim()
 
     if (!input) {
@@ -87,7 +31,6 @@ export default createCommand({
     }
 
     const code = extractInviteCode(input)
-
     if (!code) {
       await ctx.reply({
         content: t('common.invalid.messages.invite'),
@@ -96,7 +39,6 @@ export default createCommand({
     }
 
     let invite: Awaited<ReturnType<typeof Invite.fetch>>
-
     try {
       invite = await Invite.fetch(client, code)
     } catch (error) {
@@ -106,7 +48,7 @@ export default createCommand({
         error.code === 'UNKNOWN_INVITE'
 
       if (!isUnknownInvite) {
-        console.error(`[inviteinfo] Failed to fetch invite "${code}":`, error)
+        logger.error(`[inviteinfo] Failed to fetch invite "${code}"`, error)
       }
 
       await ctx.reply({
@@ -120,25 +62,17 @@ export default createCommand({
       `**${t('commands.inviteinfo.labels.link')}:** ${invite.url}`,
     ]
 
-    if (invite.createdAt) {
-      const timestamp = toTimestamp(invite.createdAt)
-
+    const createdText = formatTimestampPair(invite.createdAt)
+    if (createdText) {
       lines.push(
-        `**${t('commands.inviteinfo.labels.created')}:** <t:${timestamp}:f> (<t:${timestamp}:R>)`,
+        `**${t('commands.inviteinfo.labels.created')}:** ${createdText}`,
       )
     }
 
-    if (invite.expiresAt) {
-      const timestamp = toTimestamp(invite.expiresAt)
-
-      lines.push(
-        `**${t('commands.inviteinfo.labels.expires')}:** <t:${timestamp}:f> (<t:${timestamp}:R>)`,
-      )
-    } else {
-      lines.push(
-        `**${t('commands.inviteinfo.labels.expires')}:** ${t('commands.inviteinfo.neverExpires')}`,
-      )
-    }
+    const expiresText = formatTimestampPair(invite.expiresAt)
+    lines.push(
+      `**${t('commands.inviteinfo.labels.expires')}:** ${expiresText ?? t('commands.inviteinfo.neverExpires')}`,
+    )
 
     if (invite.uses != null) {
       lines.push(`**${t('commands.inviteinfo.labels.uses')}:** ${invite.uses}`)
@@ -155,32 +89,28 @@ export default createCommand({
     }
 
     if (invite.inviter) {
-      const inviter = invite.inviter
-
       lines.push(
-        `**${t('commands.inviteinfo.labels.inviter')}:** \`${inviter.username}#${inviter.discriminator} (${inviter.id})\``,
+        `**${t('commands.inviteinfo.labels.inviter')}:** ${formatUserTag(invite.inviter)}`,
       )
     }
 
     const guild = invite.guildSnapshot
-
     if (guild) {
-      lines.push('')
-
-      lines.push(`**${t('commands.inviteinfo.labels.server')}:** ${guild.name}`)
+      lines.push(
+        '',
+        `**${t('commands.inviteinfo.labels.server')}:** ${guild.name}`,
+      )
 
       if (guild.id) {
         lines.push(
           `**${t('commands.inviteinfo.labels.serverId')}:** \`${guild.id}\``,
         )
       }
-
       if (invite.memberCount != null) {
         lines.push(
           `**${t('commands.inviteinfo.labels.members')}:** ${invite.memberCount}`,
         )
       }
-
       if (invite.presenceCount != null) {
         lines.push(
           `**${t('commands.inviteinfo.labels.online')}:** ${invite.presenceCount}`,
@@ -188,37 +118,25 @@ export default createCommand({
       }
     }
 
-    const channel = invite.channelSnapshot
-
-    if (channel?.name) {
+    if (invite.channelSnapshot?.name) {
       lines.push(
-        `**${t('commands.inviteinfo.labels.channel')}:** ${channel.name}`,
+        `**${t('commands.inviteinfo.labels.channel')}:** ${invite.channelSnapshot.name}`,
       )
     }
 
-    const icon = guild?.icon
+    lines.push('', t('commands.inviteinfo.openInBrowser', invite.url))
 
-    const iconUrl =
-      guild?.id && icon
-        ? `https://fluxerusercontent.com/icons/${guild.id}/${icon}.${icon.startsWith('a_') ? 'gif' : 'png'}?size=256`
-        : undefined
-
+    const iconUrl = getSnapshotGuildIconUrl(guild?.id, guild?.icon, 256)
     const embed = Embed({
       author: {
         name: t('commands.inviteinfo.title'),
         iconUrl,
       },
-      description: [
-        ...lines,
-        '',
-        t('commands.inviteinfo.openInBrowser', invite.url),
-      ].join('\n'),
+      description: lines,
       color: colors.primary,
       thumbnail: iconUrl,
     })
 
-    await ctx.reply({
-      embeds: [embed],
-    })
+    await ctx.reply({ embeds: [embed] })
   },
 })

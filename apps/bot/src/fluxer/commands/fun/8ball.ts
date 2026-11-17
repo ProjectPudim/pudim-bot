@@ -1,10 +1,10 @@
 import { randomInt } from 'node:crypto'
+import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { colors } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
+import { Embed, safeReplyMentions } from '#bot/utils'
 
-const USAGE = '{prefix}8ball <question>'
 const MAX_QUESTION_LENGTH = 500
+const RESPONSE_CATEGORIES = ['positive', 'negative', 'neutral'] as const
 
 export default createCommand({
   name: '8ball',
@@ -13,13 +13,13 @@ export default createCommand({
     'pt-BR': 'Responde uma pergunta com a bola mágica.',
     'es-ES': 'Responde una pregunta con la bola mágica.',
   },
-  category: 'fun',
-  usage: USAGE,
+  category: Category.Fun,
+  usage: '{prefix}8ball <question>',
   aliases: ['bola8', 'magic8ball'],
   async run(ctx) {
     const { t, args, author } = ctx
-
     const question = args.join(' ').trim()
+
     if (!question) {
       await ctx.reply({
         content: t('commands.8ball.messages.missingQuestion'),
@@ -34,10 +34,9 @@ export default createCommand({
       return
     }
 
-    const categories = ['positive', 'negative', 'neutral'] as const
-    const category = categories[randomInt(0, categories.length)]
-    const translate = t as (key: string, ...args: unknown[]) => string
-    const response = translate(`commands.8ball.responses.${category}`)
+    const category =
+      RESPONSE_CATEGORIES[randomInt(0, RESPONSE_CATEGORIES.length)]!
+    const response = t(`commands.8ball.responses.${category}`)
 
     const embed = Embed({
       title: `🎱 ${t('commands.8ball.title')}`,
@@ -58,12 +57,7 @@ export default createCommand({
 
     await ctx.reply({
       embeds: [embed],
-      allowedMentions: {
-        parse: [],
-        users: [author.id],
-        roles: [],
-        repliedUser: true,
-      },
+      allowedMentions: safeReplyMentions(author.id),
     })
   },
 })

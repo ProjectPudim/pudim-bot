@@ -1,6 +1,7 @@
+import { randomInt } from 'node:crypto'
+import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { colors } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
+import { Embed } from '#bot/utils'
 
 type Side = 'heads' | 'tails'
 
@@ -21,54 +22,36 @@ export default createCommand({
     'es-ES': 'Lanza una moneda.',
   },
   aliases: ['cf'],
-  category: 'fun',
+  category: Category.Fun,
   usage: '{prefix}coinflip [cara|coroa]',
   async run(ctx) {
     const { args, t } = ctx
+    const rawChoice = args[0]?.toLowerCase()
+    const choice = rawChoice ? CHOICES[rawChoice] : undefined
 
-    const choice = CHOICES[args?.[0]?.toLowerCase() ?? '']
-    const result: Side = Math.random() < 0.5 ? 'heads' : 'tails'
-
-    if (args?.[0] && !choice) {
+    if (rawChoice && !choice) {
       await ctx.reply({
         content: t('commands.coinflip.messages.invalidUsage'),
       })
       return
     }
 
+    const result: Side = randomInt(0, 2) === 0 ? 'heads' : 'tails'
+
     const message = await ctx.reply({
-      embeds: [
-        Embed({
-          description: t('commands.coinflip.flipping'),
-          color: colors.primary,
-        }),
-      ],
+      embeds: [Embed(t('commands.coinflip.flipping'), colors.primary)],
     })
 
     await sleep(500)
 
-    let description = t(
-      'commands.coinflip.result',
-      t(`commands.coinflip.${result}`),
-    )
-
-    if (choice) {
-      description +=
-        ' ' +
-        t(
-          choice === result
-            ? 'commands.coinflip.win'
-            : 'commands.coinflip.lose',
-        )
-    }
+    const outcome = choice
+      ? ` ${t(choice === result ? 'commands.coinflip.win' : 'commands.coinflip.lose')}`
+      : ''
+    const description =
+      t('commands.coinflip.result', t(`commands.coinflip.${result}`)) + outcome
 
     await message.edit({
-      embeds: [
-        Embed({
-          description,
-          color: colors.primary,
-        }),
-      ],
+      embeds: [Embed(description, colors.primary)],
     })
   },
 })

@@ -1,6 +1,6 @@
+import { Category, config } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { config } from '#bot/utils/config'
-import { Embed } from '#bot/utils/embed'
+import { Embed } from '#bot/utils'
 
 export default createCommand({
   name: 'botinvite',
@@ -9,27 +9,25 @@ export default createCommand({
     'pt-BR': 'Mostra um link de convite para o bot.',
     'es-ES': 'Muestra un enlace de invitación para el bot.',
   },
-  category: 'utility',
+  category: Category.Utilities,
   aliases: ['support'],
   usage: '{prefix}botinvite',
   async run(ctx) {
-    const { t } = ctx
-    const botInvite = config.links.botInvite
-    const botAvatar = ctx.client.user!.displayAvatarURL()
+    const { t, prefix, client } = ctx
+    const botAvatar = client.user!.displayAvatarURL()
 
     const embed = Embed({
       author: {
         name: t('commands.botinvite.author.name'),
         iconUrl: botAvatar,
-        url: botInvite,
+        url: config.links.botInvite,
       },
       description: t('commands.botinvite.description'),
       thumbnail: botAvatar,
-      footer: { text: `${ctx.prefix}help` },
+      footer: { text: `${prefix}help` },
       timestamp: true,
     })
 
     await ctx.reply({ embeds: [embed] })
-    return
   },
 })

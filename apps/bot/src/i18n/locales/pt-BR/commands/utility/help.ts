@@ -1,4 +1,4 @@
-import { config } from '#bot/utils/config'
+import { config } from '#bot/config'
 
 export default {
   messages: {},
@@ -29,13 +29,13 @@ export default {
   category: {
     description: (prefix: string, lines: string[]) =>
       [
-        `Caso queira, use \`${prefix}help <command>\` para detalhes de um comando especifíco.`,
+        `Caso queira, use \`${prefix}help <command>\` para detalhes de um comando específico.`,
         '',
         ...(lines.length ? lines : ['Essa categoria não possui comandos...']),
       ].join('\n'),
     pages: (pages: number, current: number, prefix: string) =>
       pages > 1
         ? `Página ${current}/${pages} · Use as setas para navegar`
-        : `Use ${prefix}help <command> para detalhes de um comando especifíco.`,
+        : `Use ${prefix}help <command> para detalhes de um comando específico.`,
   },
 }

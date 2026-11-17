@@ -1,8 +1,44 @@
+import { Category, colors, emojis } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { colors, emojis } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
+import type { TranslateFunction } from '#bot/i18n'
+import {
+  Embed,
+  formatTimestampPair,
+  formatUserTag,
+  getGuildBannerUrl,
+  getGuildIconUrl,
+  safeReplyMentions,
+} from '#bot/utils'
 
-const USAGE = '{prefix}serverinfo'
+function getVerificationLabel(level: number, t: TranslateFunction): string {
+  switch (level) {
+    case 0:
+      return t('commands.serverinfo.verification.none')
+    case 1:
+      return t('commands.serverinfo.verification.low')
+    case 2:
+      return t('commands.serverinfo.verification.medium')
+    case 3:
+      return t('commands.serverinfo.verification.high')
+    case 4:
+      return t('commands.serverinfo.verification.veryHigh')
+    default:
+      return t('commands.serverinfo.unavailable')
+  }
+}
+
+function getExplicitFilterLabel(level: number, t: TranslateFunction): string {
+  switch (level) {
+    case 0:
+      return t('commands.serverinfo.explicitFilter.disabled')
+    case 1:
+      return t('commands.serverinfo.explicitFilter.membersWithoutRoles')
+    case 2:
+      return t('commands.serverinfo.explicitFilter.allMembers')
+    default:
+      return t('commands.serverinfo.unavailable')
+  }
+}
 
 export default createCommand({
   name: 'serverinfo',
@@ -11,17 +47,14 @@ export default createCommand({
     'pt-BR': 'Mostra informações sobre o servidor.',
     'es-ES': 'Muestra información sobre el servidor.',
   },
-  category: 'utility',
-  usage: USAGE,
+  category: Category.Utilities,
+  usage: '{prefix}serverinfo',
   aliases: ['sinfo', 'guildinfo'],
-  guildOnly: true,
+  context: 'guild',
   async run(ctx) {
     const { t, author, client, guildId, args } = ctx
-
     const targetGuildId = args[0]?.trim() || guildId
     if (!targetGuildId) return
-
-    const translate = t as (key: string, ...args: unknown[]) => string
 
     const guild = await client.guilds.fetch(targetGuildId).catch(() => null)
     if (!guild) {
@@ -31,31 +64,22 @@ export default createCommand({
       return
     }
 
-    const ownerTag = guild.ownerId
-      ? await (async () => {
-          try {
-            const user = await client.users.fetch(guild.ownerId)
-            return `\`${user.username}#${user.discriminator} (${user.id})\``
-          } catch {
-            return `\`${guild.ownerId}\``
-          }
-        })()
-      : t('commands.serverinfo.unavailable')
+    const ownerUser = guild.ownerId
+      ? await client.users.fetch(guild.ownerId).catch(() => null)
+      : null
+    const ownerTag = ownerUser
+      ? formatUserTag(ownerUser)
+      : guild.ownerId
+        ? `\`${guild.ownerId}\``
+        : t('commands.serverinfo.unavailable')
 
-    const createdAt = Math.floor(guild.createdAt.getTime() / 1000)
-
-    const verificationLabel = verificationLabelFor(
-      guild.verificationLevel,
-      translate,
-    )
+    const createdText = formatTimestampPair(guild.createdAt) ?? '—'
+    const verificationLabel = getVerificationLabel(guild.verificationLevel, t)
     const mfaLabel =
       guild.mfaLevel === 1
         ? t('commands.serverinfo.mfa.elevated')
         : t('commands.serverinfo.mfa.none')
-    const explicitLabel = explicitFilterLabel(
-      guild.explicitContentFilter,
-      translate,
-    )
+    const explicitLabel = getExplicitFilterLabel(guild.explicitContentFilter, t)
     const notificationLabel =
       guild.defaultMessageNotifications === 0
         ? t('commands.serverinfo.notifications.allMessages')
@@ -69,20 +93,15 @@ export default createCommand({
       ? guild.features.join(', ')
       : t('commands.serverinfo.labels.none')
 
-    const animatedIcon = guild.icon?.startsWith('a_') ?? false
-    const baseIconUrl = guild.iconURL({ size: 256 })
-    const iconUrl =
-      baseIconUrl && animatedIcon
-        ? baseIconUrl.replace(/\.png(\?|$)/, '.gif$1')
-        : baseIconUrl
-    const bannerUrl = guild.bannerURL()
+    const iconUrl = getGuildIconUrl(guild, 256)
+    const bannerUrl = getGuildBannerUrl(guild)
 
     const infoLines: string[] = [
       `**${emojis.database} ${t('commands.serverinfo.topics.server')}:**`,
       `- **${t('commands.serverinfo.labels.name')}:** ${guild.name}`,
       `- **${t('commands.serverinfo.labels.id')}:** \`${guild.id}\``,
       `- **${t('commands.serverinfo.labels.owner')}:** ${ownerTag}`,
-      `- **${t('commands.serverinfo.labels.created')}:** <t:${createdAt}:f> (<t:${createdAt}:R>)`,
+      `- **${t('commands.serverinfo.labels.created')}:** ${createdText}`,
       guild.memberCount !== null
         ? guild.onlineCount !== null
           ? t(
@@ -110,7 +129,7 @@ export default createCommand({
         name: t('commands.serverinfo.author', guild.name),
         iconUrl: iconUrl ?? undefined,
       },
-      description: infoLines.join('\n'),
+      description: infoLines,
       color: colors.primary,
       thumbnail: iconUrl ?? undefined,
       image: bannerUrl ?? undefined,
@@ -118,48 +137,7 @@ export default createCommand({
 
     await ctx.reply({
       embeds: [infoEmbed],
-      allowedMentions: {
-        parse: [],
-        users: [author.id],
-        roles: [],
-        repliedUser: true,
-      },
+      allowedMentions: safeReplyMentions(author.id),
     })
   },
 })
-
-function verificationLabelFor(
-  level: number,
-  t: (key: string) => string,
-): string {
-  switch (level) {
-    case 0:
-      return t('commands.serverinfo.verification.none')
-    case 1:
-      return t('commands.serverinfo.verification.low')
-    case 2:
-      return t('commands.serverinfo.verification.medium')
-    case 3:
-      return t('commands.serverinfo.verification.high')
-    case 4:
-      return t('commands.serverinfo.verification.veryHigh')
-    default:
-      return t('commands.serverinfo.unavailable')
-  }
-}
-
-function explicitFilterLabel(
-  level: number,
-  t: (key: string) => string,
-): string {
-  switch (level) {
-    case 0:
-      return t('commands.serverinfo.explicitFilter.disabled')
-    case 1:
-      return t('commands.serverinfo.explicitFilter.membersWithoutRoles')
-    case 2:
-      return t('commands.serverinfo.explicitFilter.allMembers')
-    default:
-      return t('commands.serverinfo.unavailable')
-  }
-}

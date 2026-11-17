@@ -1,5 +1,3 @@
-// `create*` functions are only available through `setupCreators()`.
-
 export { setupCreators } from './creators'
 export type {
   CommandSection,
@@ -7,6 +5,13 @@ export type {
   EventSection,
   SetupCreatorsOptions,
 } from './creators'
+
+export { createCommand } from './creators/commands/create'
+export {
+  createMiddleware,
+  MiddlewareStopError,
+} from './creators/commands/middleware'
+export { createEvent } from './creators/events/create'
 
 export { bootstrap, DEFAULT_MODULE_PATTERNS } from './bootstrap'
 export type {
@@ -17,10 +22,10 @@ export type {
   CustomBootstrapOptions,
 } from './bootstrap'
 
-export { MiddlewareStopError } from './creators'
 export type {
   AnyCommand,
   AnyCommandContext,
+  AnyEvent,
   Command,
   CommandContext,
   CommandErrorHandler,
@@ -29,25 +34,24 @@ export type {
   CommandNotFoundErrorHandler,
   CommandNotFoundHandler,
   CommandOptions,
-  MiddlewareStopHandler,
+  Event,
+  EventErrorHandler,
+  EventOptions,
   InvocationContext,
   Middleware,
   MiddlewareHandle,
   MiddlewareOptions,
   Middlewares,
+  MiddlewareStopHandler,
   PrefixResolver,
   PrefixValue,
-  AnyEvent,
-  Event,
-  EventErrorHandler,
-  EventOptions,
 } from './creators'
 
 export {
-  CommandRegistry,
-  EventRegistry,
   attachEvent,
   attachEvents,
+  CommandRegistry,
+  EventRegistry,
   handleCommand,
   loadCommands,
   loadEvents,
@@ -58,44 +62,64 @@ export type {
   LoadCommandsOptions,
   LoadEventsOptions,
 } from './creators'
+
 export { getCommandsInfo } from './client-commands'
 export {
   CommandFailureError,
   isCommandFailureError,
+  type ArgumentsFailure,
   type CommandFailure,
+  type CommandFailureKind,
+  type ConcurrencyFailure,
+  type ContextFailure,
+  type CooldownFailure,
+  type OwnerFailure,
+  type PermissionsFailure,
+  type StoppedFailure,
 } from './creators/commands/failures'
-export type { ParsedCommandArgs } from './utils/args'
-export { parseCommandArgs } from './utils/args'
+
+export { parseCommandArgs, type ParsedCommandArgs } from './utils/args'
 export {
+  cooldownKey,
   getDefaultCooldownAdapter,
   MemoryCooldownAdapter,
-} from './utils/cooldown'
-export type {
-  CooldownAdapter,
-  CooldownAcquireResult,
-  CooldownScope,
-  CooldownOptions,
-} from './utils/cooldown'
-export { clearConcurrency } from './utils/concurrency'
-export type { ConcurrencyScope, ConcurrencyOptions } from './utils/concurrency'
-export { reloadModules } from './reload'
-export type { ReloadResult } from './reload'
+  REDIS_COOLDOWN_RELEASE_SCRIPT,
+  RedisCooldownAdapter,
+  type CooldownAcquireResult,
+  type CooldownAdapter,
+  type CooldownOptions,
+  type CooldownScope,
+  type RedisCooldownAdapterOptions,
+  type RedisCooldownClient,
+} from './cooldown'
+export {
+  clearConcurrency,
+  type ConcurrencyOptions,
+  type ConcurrencyScope,
+} from './utils/concurrency'
+export { reloadModules, type ReloadResult } from './reload'
 
-export { CommandState, createContext, createNotFoundContext } from './context'
-export type { CreateContextInput, InvocationContextInput } from './context'
+export {
+  CommandState,
+  createContext,
+  createNotFoundContext,
+  type CreateContextInput,
+  type InvocationContextInput,
+} from './context'
 
 export { validateEnv } from './utils/env'
 export type { StandardSchemaV1 } from './utils/standard-schema'
 export type { CoreLogger } from './utils/logger'
 export {
-  DEFAULT_MODULE_EXTENSIONS,
   collectModuleValues,
+  DEFAULT_MODULE_EXTENSIONS,
   discoverFiles,
   expandGlob,
   globToRegExp,
   importModule,
   loadModules,
+  type DiscoverFilesOptions,
+  type LoadedModule,
 } from './utils/loader'
-export type { DiscoverFilesOptions, LoadedModule } from './utils/loader'
 
 export type * from './types'

@@ -1,4 +1,4 @@
-import type { PermissionResolvable } from '@fluxerjs/core'
+import type { PermissionString } from '@fluxerjs/core'
 import type { StandardSchemaV1 } from '../../utils/standard-schema'
 
 export type CommandFailureKind =
@@ -26,7 +26,7 @@ export interface PermissionsFailure {
   readonly kind: 'permissions'
   readonly code: 'MISSING_PERMISSIONS'
   readonly target: 'user' | 'bot'
-  readonly missing: readonly PermissionResolvable[]
+  readonly missing: readonly PermissionString[]
 }
 
 export interface ArgumentsFailure {
@@ -67,6 +67,7 @@ export type CommandFailure =
 
 export class CommandFailureError extends Error {
   readonly failure: CommandFailure
+
   constructor(failure: CommandFailure) {
     super(failure.code)
     this.name = 'CommandFailureError'

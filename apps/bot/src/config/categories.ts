@@ -1,11 +1,10 @@
 import type { Locale } from '#bot/i18n'
-import { config } from './config'
+import { config } from './app'
 
 export const Category = {
   Utilities: 'utility',
   Moderation: 'moderation',
   Fun: 'fun',
-  // Settings: 'settings',
 } as const
 
 export type Category = (typeof Category)[keyof typeof Category]
@@ -35,7 +34,6 @@ export const categories = {
       'pt-BR': 'Ferramentas e comandos úteis para o dia a dia.',
     },
   },
-
   [Category.Moderation]: {
     labels: {
       'en-US': 'Moderation',
@@ -46,7 +44,6 @@ export const categories = {
       'pt-BR': 'Comandos para manter o seu servidor limpo e seguro.',
     },
   },
-
   [Category.Fun]: {
     labels: {
       'en-US': 'Fun',
@@ -57,20 +54,9 @@ export const categories = {
       'pt-BR': 'Comandos e jogos divertidos.',
     },
   },
-
-  // [Category.Settings]: {
-  //   labels: {
-  //     'en-US': 'Settings',
-  //     'pt-BR': 'Configurações',
-  //   },
-  //   descriptions: {
-  //     'en-US': 'Commands to configure bot and server features.',
-  //     'pt-BR': 'Comandos para configurar funcionalidades do bot e do servidor.',
-  //   },
-  // },
 } satisfies Record<Category, CategoryMetadata>
 
-const DEFAULT_LOCALE: Locale = config.defaultLocale as Locale
+const DEFAULT_LOCALE: Locale = config.defaultLocale
 
 function localize(
   values: DescriptionLocalization,

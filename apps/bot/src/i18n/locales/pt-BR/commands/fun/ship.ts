@@ -1,5 +1,4 @@
-import { config } from '#bot/utils/config'
-import { emojis } from '#bot/utils/constants'
+import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
@@ -8,9 +7,7 @@ export default {
   },
   title:
     '✨ O Oráculo do Destino diz...\n> Sim, **ele não erra**, se errar, foi obra do *Pudim do Destino* que fez algo hein!',
-
   percentage: (value: number) => `**Chance do casal dar certo:** ${value}%`,
-
   shipName: (name: string) => `**Nome do casal:** ${name}`,
 
   results: {

@@ -1,34 +1,36 @@
-import type { User } from '@fluxerjs/core'
+import { Category } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { Embed } from '#bot/utils/embed'
-import { parseTargetId } from '#bot/utils/user'
+import {
+  Embed,
+  getUserAvatarUrl,
+  parseUserId,
+  resolveUser,
+  safeReplyMentions,
+} from '#bot/utils'
 
 export default createCommand({
   name: 'avatar',
-  description: 'Shows the avatar of a Fluxer user',
+  description: 'Shows the avatar of a Fluxer user.',
   aliases: ['pfp', 'useravatar'],
   descriptionLocalizations: {
-    'pt-BR': 'Mostra o avatar de um usuário do Fluxer',
-    'es-ES': 'Muestra el avatar de un usuario del Fluxer',
+    'pt-BR': 'Mostra o avatar de um usuário do Fluxer.',
+    'es-ES': 'Muestra el avatar de un usuario del Fluxer.',
   },
-  category: 'utility',
+  category: Category.Utilities,
   usage: '{prefix}avatar [user]',
   async run(ctx) {
     const { args, t, client, author } = ctx
-
     const raw = args[0]?.trim()
-    const targetId = raw ? parseTargetId(raw) : author.id
+    const targetId = raw ? parseUserId(raw) : author.id
+
     if (!targetId) {
       await ctx.reply({
         content: t('common.invalid.messages.user'),
       })
       return
     }
-    const user: User | null =
-      targetId === author.id
-        ? author
-        : await client.users.fetch(targetId).catch(() => null)
 
+    const user = await resolveUser(client, targetId, author)
     if (!user) {
       await ctx.reply({
         content: t('common.notFound.messages.user', raw ?? targetId),
@@ -36,16 +38,13 @@ export default createCommand({
       return
     }
 
-    const animated = user.avatar?.startsWith('a_') ?? false
-    const avatarUrl = user.avatar
-      ? (user.avatarURL({
-          size: 512,
-          extension: animated ? 'gif' : 'png',
-        }) ?? null)
-      : null
-
+    const avatarUrl = getUserAvatarUrl(user, { size: 512 })
     const embed = Embed({
       title: t('commands.avatar.title', user.username),
+      description: avatarUrl
+        ? t('commands.avatar.openInBrowser', avatarUrl)
+        : t('commands.avatar.noAvatar'),
+      image: avatarUrl ?? undefined,
       footer: {
         text:
           author.id === targetId
@@ -54,16 +53,9 @@ export default createCommand({
       },
     })
 
-    if (avatarUrl) {
-      embed.setDescription(t('commands.avatar.openInBrowser', avatarUrl))
-      embed.setImage(avatarUrl)
-    } else {
-      embed.setDescription(t('commands.avatar.noAvatar'))
-    }
-
     await ctx.reply({
       embeds: [embed],
+      allowedMentions: safeReplyMentions(author.id),
     })
-    return
   },
 })

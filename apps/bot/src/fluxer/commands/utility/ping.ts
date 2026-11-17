@@ -1,6 +1,6 @@
-import { EmbedBuilder } from '@fluxerjs/core'
+import { Category, colors, images } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { colors, images } from '#bot/utils/constants'
+import { Embed } from '#bot/utils'
 
 export default createCommand({
   name: 'ping',
@@ -10,45 +10,28 @@ export default createCommand({
     'es-ES': 'Muestra la latencia del bot.',
   },
   aliases: ['ms', 'pong', 'latency'],
-  category: 'utility',
+  category: Category.Utilities,
   usage: '{prefix}ping',
   async run(ctx) {
-    const { client } = ctx
+    const { client, t } = ctx
+    const thumbnail = client.user?.avatarURL() ?? images.defaultAvatar
+
+    const buildEmbed = (responseMs: number | string) =>
+      Embed({
+        title: t('commands.ping.title'),
+        description: [
+          t('commands.ping.gateway', client.ws.ping),
+          t('commands.ping.response', responseMs),
+        ],
+        color: colors.primary,
+        thumbnail,
+        timestamp: true,
+      })
+
     const start = Date.now()
+    const reply = await ctx.reply({ embeds: [buildEmbed('...')] })
+    const elapsed = Date.now() - start
 
-    const embed = () =>
-      new EmbedBuilder()
-        .setTitle(`🏓 Pong!`)
-        .setDescription(
-          [
-            `Gateway Ping: \`${client.ws.ping}ms\``,
-            `Response Time: \`...ms\``,
-          ].join('\n'),
-        )
-        .setTimestamp()
-        .setColor(colors.primary)
-        .setThumbnail(client.user?.avatarURL() ?? images.defaultAvatar)
-
-    const reply = await ctx.reply({
-      embeds: [embed()],
-    })
-
-    const end = Date.now()
-
-    await reply.edit({
-      embeds: [
-        embed()
-          .setTitle(`🏓 Pong!`)
-          .setDescription(
-            [
-              `Gateway Ping: \`${client.ws.ping}ms\``,
-              `Response Ping: \`${end - start}ms\``,
-            ].join('\n'),
-          )
-          .setTimestamp()
-          .setColor(colors.primary)
-          .setThumbnail(client.user?.avatarURL() ?? images.defaultAvatar),
-      ],
-    })
+    await reply.edit({ embeds: [buildEmbed(elapsed)] })
   },
 })

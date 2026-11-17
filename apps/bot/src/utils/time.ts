@@ -4,20 +4,15 @@ export type DurationUnit =
   'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'year'
 
 export interface ParseDurationOptions {
-  /** Unit used when a number is written without a suffix */
   defaultUnit?: DurationUnit
-  /** Minimum accepted duration in milliseconds */
   min?: number
-  /** Maximum accepted duration in milliseconds */
   max?: number
 }
 
 export type ParseDurationResult =
   { ok: true; ms: number } | { ok: false; reason: 'invalid' | 'min' | 'max' }
 
-/** Native timeout limit used by Fluxer */
 export const MAX_TIMEOUT_MS = 28 * 24 * 60 * 60 * 1000
-/** Slowmode limit used by Fluxer */
 export const MAX_SLOWMODE_MS = 6 * 60 * 60 * 1000
 
 const UNIT_MS: Record<DurationUnit, number> = {
@@ -95,7 +90,6 @@ const UNIT_ALIASES: Record<string, DurationUnit> = {
   anos: 'year',
 }
 
-// Keeps every intermediate calculation within Number.MAX_SAFE_INTEGER
 const HARD_MAX_MS = 100 * 365 * 24 * 60 * 60 * 1000
 
 function normalize(input: string): string {
@@ -107,10 +101,6 @@ function normalize(input: string): string {
     .trim()
 }
 
-/**
- * Parses free-form durations such as `12m30s`, `1h 30m`,
- * `30 minutos e 10 segundos` or `1 dia e 2 horas`.
- */
 export function parseDuration(
   input: string,
   options: ParseDurationOptions = {},
@@ -118,8 +108,6 @@ export function parseDuration(
   if (!input) return { ok: false, reason: 'invalid' }
 
   const normalized = normalize(input)
-
-  // A comma between digits is a decimal separator; decimals unsupported
   if (/\d,\d/.test(normalized)) return { ok: false, reason: 'invalid' }
 
   const cleaned = normalized
@@ -137,36 +125,40 @@ export function parseDuration(
 
   for (const match of cleaned.matchAll(partPattern)) {
     const index = match.index ?? 0
-    if (cleaned.slice(cursor, index).trim())
+    if (cleaned.slice(cursor, index).trim()) {
       return { ok: false, reason: 'invalid' }
+    }
     cursor = index + match[0].length
 
     const rawValue = match[1]
     if (!rawValue) return { ok: false, reason: 'invalid' }
 
     const value = Number(rawValue)
-    if (!Number.isSafeInteger(value) || value <= 0)
+    if (!Number.isSafeInteger(value) || value <= 0) {
       return { ok: false, reason: 'invalid' }
+    }
 
     const alias = match[2]
     const unit = alias ? UNIT_ALIASES[alias] : options.defaultUnit
-    if (!unit) return { ok: false, reason: 'invalid' }
-    if (seen.has(unit)) return { ok: false, reason: 'invalid' }
+    if (!unit || seen.has(unit)) return { ok: false, reason: 'invalid' }
     seen.add(unit)
 
     const unitMs = UNIT_MS[unit]
-    if (value > Math.floor(HARD_MAX_MS / unitMs))
+    if (value > Math.floor(HARD_MAX_MS / unitMs)) {
       return { ok: false, reason: 'invalid' }
+    }
 
     total += value * unitMs
-    if (!Number.isSafeInteger(total) || total > HARD_MAX_MS)
+    if (!Number.isSafeInteger(total) || total > HARD_MAX_MS) {
       return { ok: false, reason: 'invalid' }
+    }
 
     matched = true
   }
 
-  if (!matched) return { ok: false, reason: 'invalid' }
-  if (cleaned.slice(cursor).trim()) return { ok: false, reason: 'invalid' }
+  if (!matched || cleaned.slice(cursor).trim()) {
+    return { ok: false, reason: 'invalid' }
+  }
   if (options.min !== undefined && total < options.min) {
     return { ok: false, reason: 'min' }
   }
@@ -183,10 +175,6 @@ export interface ParsedDurationArgs {
   rest: string[]
 }
 
-/**
- * Finds the longest prefix of `args` that forms a valid duration. The
- * remaining arguments are returned so commands can treat them as a reason.
- */
 export function parseDurationArgs(
   args: string[],
   options: ParseDurationOptions = {},
@@ -208,15 +196,12 @@ export function parseDurationArgs(
   }
 }
 
-type DurationTranslator = TranslateFunction
-
-/** Formats milliseconds using the same localized units as `parseDuration` */
 export function formatDuration(
   ms: number,
-  localeOrT: string | DurationTranslator,
+  localeOrT: string | TranslateFunction,
 ): string {
   const t =
-    typeof localeOrT === 'string' ? i18n.getTranslator('pt-BR') : localeOrT
+    typeof localeOrT === 'string' ? i18n.getTranslator(localeOrT) : localeOrT
 
   const totalSeconds = Math.max(
     0,
@@ -247,8 +232,8 @@ export function formatDuration(
   }
 
   if (parts.length === 0) return t('common.duration.seconds', 0)
-  if (parts.length === 1) return parts[0] as string
+  if (parts.length === 1) return parts[0]!
 
-  const last = parts.pop() as string
+  const last = parts.pop()!
   return `${parts.join(', ')} ${t('common.and')} ${last}`
 }

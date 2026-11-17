@@ -1,5 +1,4 @@
-import { config } from '#bot/utils/config'
-import { emojis } from '#bot/utils/constants'
+import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
@@ -8,9 +7,7 @@ export default {
       `${emojis.error} ${config.separator} Sua pergunta deve ter no máximo **${max} caracteres**.`,
   },
   title: 'Magic 8-Ball',
-
   question: 'Pergunta',
-
   answer: 'Resposta',
 
   responses: {

@@ -1,7 +1,7 @@
 import type { PermissionString } from '@fluxerjs/core'
-import type { Logger } from '@pudim/shared'
+import type { Logger } from '@pudim/shared/logger'
+import type { Category } from '#bot/config'
 import type { Locale, TranslateFunction } from '#bot/i18n'
-import type { Category } from '#bot/utils/categories'
 
 declare global {
   interface ContextExtensions {
@@ -9,12 +9,12 @@ declare global {
     locale: Locale
     logger: Logger
   }
+
   interface CommandExtensions {
     category: Category
     usage: string
     permissions: PermissionString[]
   }
-  // interface EventExtensions {}
 }
 
 export {}

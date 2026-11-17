@@ -1,7 +1,12 @@
 import type { PermissionString } from '@fluxerjs/core'
 
 export default {
-  messages: {},
+  messages: {
+    user: (permissions: string) =>
+      `🙁 Me desculpe! Mas você não tem permissões necessárias para utilizar esse comando.\n> Esse comando requer: ${permissions}.`,
+    bot: (permissions: string) =>
+      `😭 Me desculpe! Eu não tenho permissões para poder executar esse comando.\n> Esse comando requer: ${permissions}.`,
+  },
   AddReactions: 'Adicionar reações',
   Administrator: 'Administrador',
   AttachFiles: 'Anexar arquivos',

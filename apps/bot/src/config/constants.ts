@@ -3,7 +3,7 @@ export const colors = {
   success: '#22c55e',
   danger: '#ED4245',
   warning: '#fbbd23',
-}
+} as const
 
 export const emojis = {
   category: {
@@ -26,7 +26,7 @@ export const emojis = {
   success: '<:success:1564706194545713152>',
   error: '<:error:1564706167790239747>',
 
-  house: `<:pudimhouse:1563730819355254784>`,
+  house: '<:pudimhouse:1563730819355254784>',
   arrow_left: '<:pudimleft:1563730348162953216>',
   arrow_right: '<:pudimright:1563730348162953217>',
   document: '<:pudimdocument:1563911880332804097>',
@@ -37,10 +37,12 @@ export const emojis = {
   database: '<:pudimdb:1568790780246503426>',
   sparkles: '<:pudimsparkles:1568790780246503427>',
   giveaway: '🎉',
-}
+} as const
+
+export type BadgeKey = keyof typeof emojis.badges
 
 export const images = {
   plus: 'https://fluxerusercontent.com/emojis/1566556113300619269.png',
   less: 'https://fluxerusercontent.com/emojis/1566556113300619268.png',
   defaultAvatar: 'https://fluxerstatic.com/web/apple-touch-icon.png',
-}
+} as const

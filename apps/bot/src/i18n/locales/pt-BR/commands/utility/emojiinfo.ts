@@ -1,10 +1,9 @@
-import { config } from '#bot/utils/config'
-import { emojis } from '#bot/utils/constants'
+import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
     invalidUsage: `${emojis.error} ${config.separator} Para utilizar esse comando, você precisa **informar um emoji** ou o **ID do emoji** para que eu possa pegar suas informações.`,
-    unicodeNotSupported: `${emojis.error} ${config.separator} Me desculpe! Eu não consigo pegar informações sobre esse emoji, pois ele utiliza um emoji Unicode, que eu ainda não consigo pegar informações sobre.`,
+    unicodeNotSupported: `${emojis.error} ${config.separator} Me desculpe! Eu não consigo pegar informações sobre esse emoji, pois ele utiliza um emoji Unicode, sobre o qual ainda não consigo consultar detalhes.`,
   },
   title: 'Informações do Emoji',
 

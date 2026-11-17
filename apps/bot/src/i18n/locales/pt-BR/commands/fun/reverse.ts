@@ -1,5 +1,4 @@
-import { config } from '#bot/utils/config'
-import { emojis } from '#bot/utils/constants'
+import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
@@ -7,6 +6,5 @@ export default {
     tooLong: `${emojis.error} ${config.separator} O texto que você informou é longo demais para ser invertido.`,
   },
   title: 'Reverse',
-
   reversedBy: 'Texto invertido por',
 }

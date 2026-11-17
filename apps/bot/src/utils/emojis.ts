@@ -1,5 +1,6 @@
 const CUSTOM_BRACKETS = /^<(a?):(\w+):(\d+)>$/
 const CUSTOM_PLAIN = /^(\w+):(\d+)$/
+const EMOJI_SNOWFLAKE = /^\d{17,20}$/
 const UNICODE_EMOJI =
   /^(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|[#*0-9]\uFE0F?\u20E3)/u
 
@@ -31,24 +32,41 @@ export function emojiRoute(emoji: unknown): string {
 }
 
 export function parseEmoji(input?: string): ParsedEmoji | null {
-  if (!input) return null
+  const trimmed = input?.trim()
+  if (!trimmed) return null
 
-  const bracket = input.match(CUSTOM_BRACKETS)
+  const bracket = trimmed.match(CUSTOM_BRACKETS)
   if (bracket) {
     return {
       raw: `${bracket[2]}:${bracket[3]}`,
       id: bracket[3]!,
-      display: input,
+      display: trimmed,
     }
   }
 
-  const plain = input.match(CUSTOM_PLAIN)
+  const plain = trimmed.match(CUSTOM_PLAIN)
   if (plain) {
-    return { raw: input, id: plain[2]!, display: `<:${plain[1]}:${plain[2]}>` }
+    return {
+      raw: trimmed,
+      id: plain[2]!,
+      display: `<:${plain[1]}:${plain[2]}>`,
+    }
   }
 
-  if (UNICODE_EMOJI.test(input)) {
-    return { raw: input, id: emojiIdentity(input), display: input }
+  if (EMOJI_SNOWFLAKE.test(trimmed)) {
+    return {
+      raw: `_:${trimmed}`,
+      id: trimmed,
+      display: `<:_:${trimmed}>`,
+    }
+  }
+
+  if (UNICODE_EMOJI.test(trimmed)) {
+    return {
+      raw: trimmed,
+      id: emojiIdentity(trimmed),
+      display: trimmed,
+    }
   }
 
   return null

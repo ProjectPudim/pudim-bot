@@ -1,9 +1,8 @@
 import { randomInt } from 'node:crypto'
+import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { colors } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
+import { Embed, safeReplyMentions } from '#bot/utils'
 
-const USAGE = '{prefix}choose <option1> | <option2> | ...'
 const MAX_OPTIONS = 20
 const MAX_OPTION_LENGTH = 100
 
@@ -14,16 +13,16 @@ export default createCommand({
     'pt-BR': 'Escolhe entre opções.',
     'es-ES': 'Elige entre opciones.',
   },
-  category: 'fun',
-  usage: USAGE,
+  category: Category.Fun,
+  usage: '{prefix}choose <option1> | <option2> | ...',
   aliases: ['escolher'],
   async run(ctx) {
-    const { t, args, author } = ctx
-
+    const { t, args, author, prefix } = ctx
     const input = args.join(' ').trim()
+
     if (!input) {
       await ctx.reply({
-        content: t('commands.choose.messages.invalidOptions', ctx.prefix),
+        content: t('commands.choose.messages.invalidOptions', prefix),
       })
       return
     }
@@ -35,7 +34,7 @@ export default createCommand({
 
     if (options.length < 2) {
       await ctx.reply({
-        content: t('commands.choose.messages.invalidOptions', ctx.prefix),
+        content: t('commands.choose.messages.invalidOptions', prefix),
       })
       return
     }
@@ -54,7 +53,7 @@ export default createCommand({
       return
     }
 
-    const chosen = options[randomInt(0, options.length)]
+    const chosen = options[randomInt(0, options.length)]!
 
     const embed = Embed({
       title: `🎲 ${t('commands.choose.title')}`,
@@ -73,12 +72,7 @@ export default createCommand({
 
     await ctx.reply({
       embeds: [embed],
-      allowedMentions: {
-        parse: [],
-        users: [author.id],
-        roles: [],
-        repliedUser: true,
-      },
+      allowedMentions: safeReplyMentions(author.id),
     })
   },
 })

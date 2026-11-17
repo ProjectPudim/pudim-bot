@@ -6,6 +6,8 @@ import {
 } from './browser'
 import { DEFAULTS, type Resolved } from './constants'
 import { HttpError } from './errors'
+import { parseResponseBody } from './parser'
+import { computeRetryDelay, shouldRetryRequest } from './retry'
 import type {
   BodyType,
   BrowserProfile,
@@ -15,7 +17,6 @@ import type {
   HttpResponse,
   QueryValue,
   RequestOptions,
-  ResponseType,
 } from './types'
 import {
   abortError,
@@ -73,13 +74,15 @@ export class HttpClient {
     this.logger?.(message)
   }
 
-  // The slot is reserved before waiting so concurrent calls don't fire together
+  // Reserve the slot before sleeping so concurrent calls stay spaced apart
   private async throttle(signal?: AbortSignal): Promise<void> {
     const interval = this.opts.requestInterval ?? 0
     if (interval <= 0) return
+
     const now = Date.now()
     const slot = Math.max(now, this.nextSlotAt)
     this.nextSlotAt = slot + interval
+
     if (slot > now) await sleep(slot - now, signal)
   }
 
@@ -111,53 +114,24 @@ export class HttpClient {
               i,
             ]),
           )
+
     for (const [key, value] of entries) {
-      if (value !== null && value !== undefined)
+      if (value !== null && value !== undefined) {
         target.searchParams.append(
           key,
           value instanceof Date ? value.toISOString() : String(value),
         )
+      }
     }
+
     return target
   }
 
-  private async parseBody(res: Response, type: ResponseType): Promise<unknown> {
-    const contentType = res.headers.get('content-type') ?? ''
-    if (type === 'stream') return res.body
-    if (
-      type === 'buffer' ||
-      (type === 'auto' &&
-        /^(image|audio|video)\/|octet-stream|pdf|zip/i.test(contentType))
-    ) {
-      return Buffer.from(await res.arrayBuffer())
-    }
-
-    const text = await res.text()
-    if (type === 'text' || (type === 'auto' && !/json/i.test(contentType)))
-      return text
-    if (!text.trim()) return null
-    try {
-      return JSON.parse(text)
-    } catch (cause) {
-      if (type === 'json')
-        throw new HttpError('JSON inválido na resposta.', {
-          code: 'PARSE',
-          retryable: false,
-          status: res.status,
-          cause,
-        })
-      return text
-    }
-  }
-
-  private async send<T>(
+  private prepareHeadersAndBody(
     url: URL,
-    method: HttpMethod,
     options: RequestOptions,
     cfg: Resolved,
-    attempt: number,
-    startedAt: number,
-  ): Promise<HttpResponse<T>> {
+  ): { headers: Headers; body: BodyType | undefined } {
     const headers = cfg.browserHeaders
       ? browserHeaders(
           cfg,
@@ -166,6 +140,7 @@ export class HttpClient {
           this.siteOrigin,
         )
       : new Headers()
+
     for (const [key, value] of Object.entries({
       ...this.opts.headers,
       ...options.headers,
@@ -176,42 +151,57 @@ export class HttpClient {
 
     let body = options.body
     if (options.json !== undefined) {
-      if (!headers.has('content-type'))
+      if (!headers.has('content-type')) {
         headers.set('Content-Type', 'application/json')
+      }
       body = JSON.stringify(options.json)
     } else if (typeof FormData !== 'undefined' && body instanceof FormData) {
-      // fetch must generate the Content-Type with the multipart boundary
+      // Allow fetch to generate Content-Type with the multipart boundary
       headers.delete('content-type')
     }
+
+    return { headers, body }
+  }
+
+  private async send<T>(
+    url: URL,
+    method: HttpMethod,
+    options: RequestOptions,
+    cfg: Resolved,
+    attempt: number,
+    startedAt: number,
+  ): Promise<HttpResponse<T>> {
+    const { headers, body } = this.prepareHeadersAndBody(url, options, cfg)
 
     const controller = new AbortController()
     let timedOut = false
     const timer =
       cfg.requestTimeout > 0
-        ? setTimeout(
-            () => ((timedOut = true), controller.abort()),
-            cfg.requestTimeout,
-          )
+        ? setTimeout(() => {
+            timedOut = true
+            controller.abort()
+          }, cfg.requestTimeout)
         : null
+
     const onAbort = () => controller.abort()
     options.signal?.addEventListener('abort', onAbort, { once: true })
 
     const init: FetchInit = { method, headers, signal: controller.signal }
-    if (method !== 'GET' && method !== 'HEAD' && body !== undefined)
+    if (method !== 'GET' && method !== 'HEAD' && body !== undefined) {
       init.body = body
+    }
     Object.assign(init, cfg.fetchOptions)
 
     const info = { url: url.toString(), attempt }
     try {
       await cfg.hooks?.beforeRequest?.({ url, headers, init, attempt })
-
       if (options.signal?.aborted) throw abortError()
 
       this.log(`${method} ${url} (tentativa ${attempt})`)
       const res = await fetch(url, init)
       if (cfg.responseType === 'stream' && timer) clearTimeout(timer)
 
-      const result = (data: unknown): HttpResponse<T> => ({
+      const toResponse = (data: unknown): HttpResponse<T> => ({
         data: data as T,
         status: res.status,
         statusText: res.statusText,
@@ -222,11 +212,14 @@ export class HttpClient {
         durationMs: Date.now() - startedAt,
       })
 
-      if (cfg.validateStatus(res.status))
-        return result(await this.parseBody(res, cfg.responseType))
+      if (cfg.validateStatus(res.status)) {
+        return toResponse(await parseResponseBody(res, cfg.responseType))
+      }
 
-      const errorData = await this.parseBody(res, 'auto').catch(() => undefined)
-      if (!cfg.throwHttpErrors) return result(errorData)
+      const errorData = await parseResponseBody(res, 'auto').catch(
+        () => undefined,
+      )
+      if (!cfg.throwHttpErrors) return toResponse(errorData)
 
       throw new HttpError(`HTTP ${res.status} ${res.statusText}`.trim(), {
         ...info,
@@ -238,19 +231,21 @@ export class HttpClient {
       })
     } catch (error) {
       if (error instanceof HttpError) throw error
-      if (timedOut)
+      if (timedOut) {
         throw new HttpError(`Timeout após ${cfg.requestTimeout}ms`, {
           ...info,
           code: 'TIMEOUT',
           cause: error,
         })
-      if (options.signal?.aborted)
+      }
+      if (options.signal?.aborted) {
         throw new HttpError('Requisição abortada.', {
           ...info,
           code: 'ABORTED',
           retryable: false,
           cause: error,
         })
+      }
       throw new HttpError(
         error instanceof Error ? error.message : String(error),
         { ...info, code: 'NETWORK', cause: error },
@@ -271,8 +266,8 @@ export class HttpClient {
       ...DEFAULTS,
       ...defined(this.opts),
       ...defined(options),
+      hooks: { ...this.opts.hooks, ...options.hooks },
     }
-    cfg.hooks = { ...this.opts.hooks, ...options.hooks }
     const method = (options.method ?? 'GET').toUpperCase() as HttpMethod
     const target = this.buildUrl(url, cfg)
     const maxAttempts = Math.max(0, cfg.maxRetries) + 1
@@ -291,7 +286,7 @@ export class HttpClient {
           startedAt,
         )
         return (
-          ((await cfg.hooks.afterResponse?.(
+          ((await cfg.hooks?.afterResponse?.(
             response,
           )) as HttpResponse<T> | void) ?? response
         )
@@ -307,33 +302,16 @@ export class HttpClient {
         lastError.attempt = attempt
       }
 
-      if (lastError.status === 403)
+      if (lastError.status === 403) {
         this.log(`Perfil trocado para ${this.rotateProfile().name}`)
+      }
 
-      const retryableCause =
-        lastError.status !== null
-          ? cfg.retryStatusCodes.includes(lastError.status)
-          : lastError.code !== 'ABORTED'
-      if (
-        attempt >= maxAttempts ||
-        !lastError.retryable ||
-        !retryableCause ||
-        !cfg.retryMethods.includes(method)
-      )
+      if (!shouldRetryRequest(lastError, method, attempt, maxAttempts, cfg)) {
         break
+      }
 
-      // Retry-After and 429 take priority over the exponential backoff
-      const base = Math.min(
-        cfg.backoffBase * 2 ** (attempt - 1),
-        cfg.backoffMax,
-      )
-      let delay = Math.round(base / 2 + Math.random() * (base / 2))
-      if (lastError.status === 429)
-        delay = Math.min(lastError.retryAfterMs ?? cfg.rateLimitDelay, 600_000)
-      else if (lastError.retryAfterMs !== null)
-        delay = Math.max(delay, Math.min(lastError.retryAfterMs, 600_000))
-
-      await cfg.hooks.beforeRetry?.({
+      const delay = computeRetryDelay(lastError, attempt, cfg)
+      await cfg.hooks?.beforeRetry?.({
         error: lastError,
         attempt,
         maxAttempts,
@@ -388,7 +366,6 @@ export class HttpClient {
     return this.request<T>(url, { ...options, method: 'DELETE' })
   }
 
-  // Objects and arrays become JSON; any other value is sent as a raw body
   private withBody<T>(
     method: HttpMethod,
     url: string,
@@ -403,7 +380,6 @@ export class HttpClient {
     })
   }
 
-  // Headers are merged; hooks and other overridden options replace the current ones
   extend(overrides: HttpClientOptions = {}): HttpClient {
     return new HttpClient({
       ...this.opts,

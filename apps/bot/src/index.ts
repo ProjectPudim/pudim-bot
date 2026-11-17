@@ -1,12 +1,12 @@
-import { redis } from 'bun'
-import { connectRedis, disconnectRedis } from '@pudim/cache'
+import { connectRedis, disconnectRedis, getRedis } from '@pudim/cache'
 import { connectMongo, disconnectMongo } from '@pudim/database'
-import { bootstrap } from '@pudim/framework'
-import { RedisCooldownAdapter } from '@pudim/framework/cooldown/redis'
+import { bootstrap, RedisCooldownAdapter } from '@pudim/framework'
 import { http } from '@pudim/shared/http'
+import { config } from '#bot/config'
+import { env } from '#bot/env'
+import { creators } from '#bot/fluxer'
+import { i18n } from '#bot/i18n'
 import { logger } from '#bot/utils/logger'
-import { env } from './env'
-import { i18n } from './i18n'
 
 let closing = false
 let app: Awaited<ReturnType<typeof bootstrap>> | undefined
@@ -17,17 +17,16 @@ async function shutdown(code = 0): Promise<void> {
 
   const timeout = setTimeout(() => {
     process.exit(1)
-  }, 3000)
+  }, 3_000)
   timeout.unref()
 
   try {
     if (app) {
-      await app.dispose()
+      app.dispose()
       await app.client.destroy()
     }
 
     await Promise.allSettled([disconnectMongo(), disconnectRedis()])
-
     logger.info('The bot has been stopped')
   } catch (error) {
     logger.error('Error stopping the bot', error)
@@ -51,24 +50,23 @@ try {
     connectMongo(env.MONGODB_URI),
     connectRedis(env.VALKEY_URL),
   ])
-
-  logger.success('The MongoDB and Redis have been connected')
+  logger.success('MongoDB and Redis have been connected')
 
   app = await bootstrap({
     meta: import.meta,
-
+    token: env.BOT_TOKEN,
+    creators,
+    logger,
     decorateContext(ctx) {
-      ctx.t = i18n.getTranslator('pt-BR')
-      ctx.locale = 'pt-BR'
+      ctx.locale = config.defaultLocale
+      ctx.t = i18n.getTranslator(ctx.locale)
       ctx.logger = logger
     },
-    logger,
-    beforeLoad() {
-      http.init()
+    async beforeLoad() {
+      await http.init()
     },
-
     adapters: {
-      cooldown: new RedisCooldownAdapter(redis, { prefix: 'pudim:' }),
+      cooldown: new RedisCooldownAdapter(getRedis(), { prefix: 'pudim:' }),
     },
   })
 

@@ -33,8 +33,8 @@ export interface FluxerProfile {
   connected_accounts?: ConnectedAccount[]
 }
 
-const CACHE_TTL = 45_000
-const NEGATIVE_TTL = 10_000
+const CACHE_TTL_MS = 45_000
+const NEGATIVE_TTL_MS = 10_000
 const CACHE_MAX_SIZE = 1_000
 
 interface CacheEntry {
@@ -43,12 +43,10 @@ interface CacheEntry {
 }
 
 const cache = new Map<string, CacheEntry>()
-
 const pending = new Map<string, Promise<FluxerProfile | null>>()
 
 function getCached(userId: string): CacheEntry | undefined {
   const entry = cache.get(userId)
-
   if (!entry) return undefined
 
   if (Date.now() >= entry.expiresAt) {
@@ -56,31 +54,29 @@ function getCached(userId: string): CacheEntry | undefined {
     return undefined
   }
 
+  // Refresh LRU order
   cache.delete(userId)
   cache.set(userId, entry)
-
   return entry
 }
 
 function setCached(
   userId: string,
   data: FluxerProfile | null,
-  ttl: number,
+  ttlMs: number,
 ): void {
   cache.delete(userId)
 
   while (cache.size >= CACHE_MAX_SIZE) {
     const oldest = cache.keys().next().value
-
     if (oldest === undefined) break
-
     cache.delete(oldest)
   }
 
-  cache.set(userId, { data, expiresAt: Date.now() + ttl })
+  cache.set(userId, { data, expiresAt: Date.now() + ttlMs })
 }
 
-async function request(
+async function requestProfile(
   userId: string,
   apiUrl: string,
 ): Promise<FluxerProfile | null> {
@@ -88,15 +84,11 @@ async function request(
     const res = await http.get<{ user?: FluxerProfile | null }>(
       `${apiUrl}/fluxer/${userId}`,
     )
-
     const user = res.data?.user ?? null
-
-    setCached(userId, user, user ? CACHE_TTL : NEGATIVE_TTL)
-
+    setCached(userId, user, user ? CACHE_TTL_MS : NEGATIVE_TTL_MS)
     return user
   } catch {
-    setCached(userId, null, NEGATIVE_TTL)
-
+    setCached(userId, null, NEGATIVE_TTL_MS)
     return null
   }
 }
@@ -105,22 +97,17 @@ export async function fetchFluxerProfile(
   userId: string,
 ): Promise<FluxerProfile | null> {
   const apiUrl = env.FELIPW_API_URL
-
   if (!apiUrl) return null
 
   const cached = getCached(userId)
-
   if (cached) return cached.data
 
   const inFlight = pending.get(userId)
-
   if (inFlight) return inFlight
 
-  const promise = request(userId, apiUrl).finally(() => {
+  const promise = requestProfile(userId, apiUrl).finally(() => {
     pending.delete(userId)
   })
-
   pending.set(userId, promise)
-
   return promise
 }

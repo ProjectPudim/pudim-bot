@@ -1,9 +1,11 @@
+import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { colors } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
-import { parseRoleId } from '#bot/utils/role'
-
-const USAGE = '{prefix}roleinfo <@role|id|name>'
+import {
+  Embed,
+  formatTimestampPair,
+  parseRoleId,
+  safeReplyMentions,
+} from '#bot/utils'
 
 export default createCommand({
   name: 'roleinfo',
@@ -12,19 +14,18 @@ export default createCommand({
     'pt-BR': 'Mostra informações sobre um cargo.',
     'es-ES': 'Muestra información sobre un rol.',
   },
-  category: 'utility',
-  usage: USAGE,
+  category: Category.Utilities,
+  usage: '{prefix}roleinfo <@role|id|name>',
   aliases: ['role', 'rinfo'],
-  guildOnly: true,
+  context: 'guild',
   async run(ctx) {
     const { t, args, author, client, guildId } = ctx
-
     if (!guildId) return
 
     const input = args.join(' ').trim()
     if (!input) {
       await ctx.reply({
-        content: t('commands.roleinfo.messages.invalidusage'),
+        content: t('commands.roleinfo.messages.invalidUsage'),
       })
       return
     }
@@ -38,8 +39,8 @@ export default createCommand({
     }
 
     const roles = await guild.fetchRoles().catch(() => [])
-
     const roleId = parseRoleId(args[0] ?? input)
+
     let role = roleId
       ? (roles.find((r) => r.id === roleId) ??
         (await guild.fetchRole(roleId).catch(() => null)))
@@ -60,15 +61,14 @@ export default createCommand({
       return
     }
 
-    const createdAt = Math.floor(role.createdAt.getTime() / 1000)
+    const createdText = formatTimestampPair(role.createdAt) ?? '—'
     const colorHex = role.color
       ? `#${role.color.toString(16).padStart(6, '0')}`
       : t('commands.roleinfo.labels.noColor')
 
     const perms = role.permissions.toArray()
-    const translate = t as (key: string, ...args: unknown[]) => string
     const permText = perms.length
-      ? perms.map((p) => translate(`common.permissions.${p}`)).join(', ')
+      ? perms.map((p) => t(`common.permissions.${p}`)).join(', ')
       : t('commands.roleinfo.noPermissions')
 
     const lines: string[] = [
@@ -76,7 +76,7 @@ export default createCommand({
       `**${t('commands.roleinfo.labels.id')}:** \`${role.id}\``,
       `**${t('commands.roleinfo.labels.color')}:** ${colorHex}`,
       `**${t('commands.roleinfo.labels.position')}:** ${role.position}`,
-      `**${t('commands.roleinfo.labels.created')}:** <t:${createdAt}:f> (<t:${createdAt}:R>)`,
+      `**${t('commands.roleinfo.labels.created')}:** ${createdText}`,
       `**${t('commands.roleinfo.labels.hoist')}:** ${role.hoist ? t('commands.roleinfo.values.yes') : t('commands.roleinfo.values.no')}`,
       `**${t('commands.roleinfo.labels.mentionable')}:** ${role.mentionable ? t('commands.roleinfo.values.yes') : t('commands.roleinfo.values.no')}`,
       `**${t('commands.roleinfo.labels.permissions')}:** ${permText}`,
@@ -84,18 +84,13 @@ export default createCommand({
 
     const embed = Embed({
       author: { name: t('commands.roleinfo.title') },
-      description: lines.join('\n'),
+      description: lines,
       color: role.color ? colorHex : colors.primary,
     })
 
     await ctx.reply({
       embeds: [embed],
-      allowedMentions: {
-        parse: [],
-        users: [author.id],
-        roles: [],
-        repliedUser: true,
-      },
+      allowedMentions: safeReplyMentions(author.id),
     })
   },
 })

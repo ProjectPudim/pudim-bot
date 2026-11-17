@@ -1,8 +1,6 @@
+import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { colors } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
-
-const USAGE = '{prefix}servericon [guildId]'
+import { Embed, getGuildIconUrl, safeReplyMentions } from '#bot/utils'
 
 export default createCommand({
   name: 'servericon',
@@ -11,13 +9,12 @@ export default createCommand({
     'pt-BR': 'Mostra o ícone do servidor.',
     'es-ES': 'Muestra el icono del servidor.',
   },
-  category: 'utility',
-  usage: USAGE,
+  category: Category.Utilities,
+  usage: '{prefix}servericon [guildId]',
   aliases: ['sicon'],
-  guildOnly: true,
+  context: 'guild',
   async run(ctx) {
     const { t, args, author, client, guildId: currentGuildId } = ctx
-
     const targetGuildId = args[0]?.trim() || currentGuildId
     if (!targetGuildId) return
 
@@ -29,13 +26,7 @@ export default createCommand({
       return
     }
 
-    const animated = guild.icon?.startsWith('a_') ?? false
-    const baseIconUrl = guild.iconURL({ size: 512 })
-    const iconUrl =
-      baseIconUrl && animated
-        ? baseIconUrl.replace(/\.png(\?|$)/, '.gif$1')
-        : baseIconUrl
-
+    const iconUrl = getGuildIconUrl(guild, 512)
     if (!iconUrl) {
       await ctx.reply({
         content: t('commands.servericon.messages.noIcon', guild.id),
@@ -45,23 +36,15 @@ export default createCommand({
 
     const embed = Embed({
       title: t('commands.servericon.title', guild.name),
-      footer: {
-        text: `ID: ${guild.id}`,
-      },
+      description: t('commands.servericon.openInBrowser', iconUrl),
+      image: iconUrl,
+      footer: { text: `ID: ${guild.id}` },
       color: colors.primary,
     })
 
-    embed.setDescription(t('commands.servericon.openInBrowser', iconUrl))
-    embed.setImage(iconUrl)
-
     await ctx.reply({
       embeds: [embed],
-      allowedMentions: {
-        parse: [],
-        users: [author.id],
-        roles: [],
-        repliedUser: true,
-      },
+      allowedMentions: safeReplyMentions(author.id),
     })
   },
 })

@@ -1,6 +1,10 @@
+import { Category } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
+import { formatUserTag, safeReplyMentions } from '#bot/utils'
 
-const USAGE = '{prefix}reverse <text>'
+const graphemeSegmenter = new Intl.Segmenter(undefined, {
+  granularity: 'grapheme',
+})
 
 export default createCommand({
   name: 'reverse',
@@ -9,13 +13,13 @@ export default createCommand({
     'pt-BR': 'Inverte um texto.',
     'es-ES': 'Invierte un texto.',
   },
-  category: 'fun',
-  usage: USAGE,
+  category: Category.Fun,
+  usage: '{prefix}reverse <text>',
   aliases: ['inverter'],
   async run(ctx) {
     const { t, args, author } = ctx
-
     const text = args.join(' ').trim()
+
     if (!text) {
       await ctx.reply({
         content: t('commands.reverse.messages.missingText'),
@@ -23,14 +27,12 @@ export default createCommand({
       return
     }
 
-    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-    const reversed = [...segmenter.segment(text)]
+    const reversed = [...graphemeSegmenter.segment(text)]
       .map((segment) => segment.segment)
       .reverse()
       .join('')
 
-    const authorTag = `\`${author.username}#${author.discriminator} (${author.id})\``
-    const content = `🔁 ${reversed}\n-# ${t('commands.reverse.reversedBy')}: ${authorTag}`
+    const content = `🔁 ${reversed}\n-# ${t('commands.reverse.reversedBy')}: ${formatUserTag(author)}`
 
     if (content.length > 2000) {
       await ctx.reply({
@@ -41,12 +43,7 @@ export default createCommand({
 
     await ctx.reply({
       content,
-      allowedMentions: {
-        parse: [],
-        users: [author.id],
-        roles: [],
-        repliedUser: true,
-      },
+      allowedMentions: safeReplyMentions(author.id),
     })
   },
 })

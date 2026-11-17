@@ -5,11 +5,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./models": "./src/models/index.ts",
-    "./repositories": "./src/repositories/index.ts"
+    "./models": "./src/models/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
   },
   "dependencies": {
     "mongoose": "^9.12.1"

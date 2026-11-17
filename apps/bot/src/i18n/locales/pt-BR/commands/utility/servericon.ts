@@ -1,5 +1,4 @@
-import { config } from '#bot/utils/config'
-import { emojis } from '#bot/utils/constants'
+import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
@@ -7,6 +6,5 @@ export default {
       `${emojis.error} ${config.separator} O servidor com ID \`${id}\` não possui um ícone configurado.`,
   },
   title: (name: string) => `Ícone de ${name}`,
-
   openInBrowser: (url: string) => `[Abrir ícone no navegador](${url})`,
 }

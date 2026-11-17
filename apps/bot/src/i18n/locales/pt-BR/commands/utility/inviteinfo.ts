@@ -1,14 +1,11 @@
-import { config } from '#bot/utils/config'
-import { emojis } from '#bot/utils/constants'
+import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
     invalidUsage: `${emojis.error} ${config.separator} Para utilizar esse comando, você precisa **informar um convite** ou o **código do convite** para que eu possa pegar suas informações.`,
   },
   title: 'Informações do Convite',
-
   expired: 'Expirado',
-
   neverExpires: 'Não expira',
 
   labels: {

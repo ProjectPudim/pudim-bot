@@ -1,8 +1,6 @@
+import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { colors } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
-
-const USAGE = '{prefix}serverbanner [guildId]'
+import { Embed, getGuildBannerUrl, safeReplyMentions } from '#bot/utils'
 
 export default createCommand({
   name: 'serverbanner',
@@ -11,13 +9,12 @@ export default createCommand({
     'pt-BR': 'Mostra o banner do servidor.',
     'es-ES': 'Muestra el banner del servidor.',
   },
-  category: 'utility',
-  usage: USAGE,
+  category: Category.Utilities,
+  usage: '{prefix}serverbanner [guildId]',
   aliases: ['sbanner'],
-  guildOnly: true,
+  context: 'guild',
   async run(ctx) {
     const { t, args, author, client, guildId: currentGuildId } = ctx
-
     const targetGuildId = args[0]?.trim() || currentGuildId
     if (!targetGuildId) return
 
@@ -29,13 +26,7 @@ export default createCommand({
       return
     }
 
-    const animated = guild.banner?.startsWith('a_') ?? false
-    const baseBannerUrl = guild.bannerURL({ size: 1024 })
-    const bannerUrl =
-      baseBannerUrl && animated
-        ? baseBannerUrl.replace(/\.png(\?|$)/, '.gif$1')
-        : baseBannerUrl
-
+    const bannerUrl = getGuildBannerUrl(guild, 1024)
     if (!bannerUrl) {
       await ctx.reply({
         content: t('commands.serverbanner.messages.noBanner', guild.id),
@@ -45,23 +36,15 @@ export default createCommand({
 
     const embed = Embed({
       title: t('commands.serverbanner.title', guild.name),
+      description: t('commands.serverbanner.openInBrowser', bannerUrl),
       color: colors.primary,
       image: bannerUrl,
-      footer: {
-        text: `ID: ${guild.id}`,
-      },
+      footer: { text: `ID: ${guild.id}` },
     })
-
-    embed.setDescription(t('commands.serverbanner.openInBrowser', bannerUrl))
 
     await ctx.reply({
       embeds: [embed],
-      allowedMentions: {
-        parse: [],
-        users: [author.id],
-        roles: [],
-        repliedUser: true,
-      },
+      allowedMentions: safeReplyMentions(author.id),
     })
   },
 })

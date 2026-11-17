@@ -1,5 +1,6 @@
 import { createI18n } from '@pudim/i18n'
 import ptBR from '#bot/i18n/locales/pt-BR'
+import { logger } from '#bot/utils/logger'
 
 export const i18n = createI18n(
   'pt-BR',
@@ -8,7 +9,7 @@ export const i18n = createI18n(
   },
   {
     onMissingKey(locale, key) {
-      console.warn(`Key ${key} not found in ${locale}`)
+      logger.warn(`[i18n] Missing translation key "${key}" in "${locale}"`)
     },
   },
 )

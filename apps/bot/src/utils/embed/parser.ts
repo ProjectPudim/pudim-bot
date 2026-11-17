@@ -1,102 +1,4 @@
-import { EmbedBuilder } from '@fluxerjs/core'
-import { colors } from './constants'
-import { collectFlags } from './flags'
-
-export interface EmbedField {
-  name: string
-  value: string | string[]
-  inline?: boolean
-}
-
-export interface EmbedFooter {
-  text: string
-  iconUrl?: string
-}
-
-export interface EmbedAuthor {
-  name: string
-  iconUrl?: string
-  url?: string
-}
-
-export interface EmbedOptions {
-  title?: string
-  description?: string | string[]
-  color?: string
-  author?: EmbedAuthor
-  fields?: EmbedField[]
-  thumbnail?: string
-  image?: string
-  footer?: EmbedFooter
-  timestamp?: boolean
-}
-
-const MAX_FIELDS = 25
-
-const join = (text: string | string[]) =>
-  Array.isArray(text) ? text.join('\n') : text
-
-export function Embed(
-  description: string | string[],
-  color?: string,
-): EmbedBuilder
-export function Embed(options: EmbedOptions): EmbedBuilder
-
-export function Embed(
-  inputOrDescription: string | string[] | EmbedOptions,
-  color?: string,
-): EmbedBuilder {
-  const embed = new EmbedBuilder()
-
-  if (
-    typeof inputOrDescription === 'string' ||
-    Array.isArray(inputOrDescription)
-  ) {
-    embed.setDescription(join(inputOrDescription))
-    embed.setColor(color ?? colors.primary)
-    return embed
-  }
-
-  const options = inputOrDescription
-
-  if (options.author?.name) {
-    embed.setAuthor({
-      name: options.author.name,
-      iconURL: options.author.iconUrl,
-      url: options.author.url,
-    })
-  }
-
-  if (options.title) embed.setTitle(options.title)
-  if (options.description) embed.setDescription(join(options.description))
-
-  embed.setColor(options.color ?? colors.primary)
-
-  if (options.fields?.length) {
-    const fields = options.fields
-      .map((f) => ({
-        name: f.name.trim(),
-        value: join(f.value).trim(),
-        inline: f.inline ?? false,
-      }))
-      .filter((f) => f.name && f.value)
-      .slice(0, MAX_FIELDS)
-
-    if (fields.length) embed.addFields(...fields)
-  }
-
-  if (options.thumbnail) embed.setThumbnail(options.thumbnail)
-  if (options.image) embed.setImage(options.image)
-  if (options.footer) {
-    embed.setFooter({
-      text: options.footer.text,
-      iconURL: options.footer.iconUrl,
-    })
-  }
-  if (options.timestamp === true) embed.setTimestamp()
-
-  return embed
-}
+import { collectFlags } from '../flags'
 
 export type EmbedExcludeArgs =
   | 'title'
@@ -151,17 +53,10 @@ export interface EmbedArgs {
   }
 }
 
-/**
- * Embed as API JSON, except `timestamp` is a boolean
- * `true` means "show the message send time" (`embed.setTimestamp()`); absent otherwise
- */
 export interface EmbedJson {
   title?: string
-  /** `null` when no description (API requires the field) */
   description: string | null
-  /** Color as 0xRRGGBB integer */
   color?: number
-  /** `true` if the user requested a timestamp; never `false` */
   timestamp?: true
   image?: { url: string }
   thumbnail?: { url: string }
@@ -169,14 +64,6 @@ export interface EmbedJson {
   author?: { name: string; icon_url?: string; url?: string }
 }
 
-/**
- * `params` lists the arguments that caused the error:
- * - `unknownArgument`: flags as typed (e.g. `--foorter.icon`)
- * - `unexpectedText`: loose text before the first flag
- * - `emptyEmbed`: empty list
- * - other codes: canonical English names (e.g. `footer.text`, `color`),
- *   even when an alias was typed (`--rodape`, `--cor`)
- */
 export interface ParseEmbedError {
   error: true
   code: ParseEmbedErrorCode
@@ -186,7 +73,10 @@ export interface ParseEmbedError {
 export type ParseEmbedResult =
   ParseEmbedError | { error: false; embed: EmbedJson }
 
-// Embed API limits; adjust here if Fluxer differs
+export interface ParseEmbedOptions {
+  partial?: boolean
+}
+
 export const EMBED_LIMITS = {
   title: 256,
   description: 4096,
@@ -196,11 +86,6 @@ export const EMBED_LIMITS = {
   url: 2048,
 } as const
 
-/**
- * Accepted names per argument; first in each list is canonical (English),
- * then Portuguese and Spanish. Accents and case are ignored;
- * `-`/`_` act as `.` (e.g. `--rodape-texto` = `--rodape.texto`)
- */
 export const EMBED_ALIASES: Record<EmbedExcludeArgs, readonly string[]> = {
   title: ['title', 'titulo'],
   description: ['description', 'desc', 'descricao', 'descripcion'],
@@ -240,13 +125,10 @@ const IMAGE_EXTENSIONS = new Set([
 
 const PRIVATE_HOST =
   /^(0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/
-
-// `--word` or `--word.word` (accents and `-`/`_` as separator)
-const FLAG = /^--(\p{L}+(?:[._-]\p{L}+)?)$/u
+const FLAG_PATTERN = /^--(\p{L}+(?:[._-]\p{L}+)?)$/u
 const HEX_COLOR = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i
 
-/** Lowercase, accent-free, `.` as separator */
-const normalize = (name: string) =>
+const normalizeFlagName = (name: string) =>
   name
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
@@ -259,7 +141,7 @@ const ALIAS_LOOKUP: ReadonlyMap<string, EmbedExcludeArgs> = (() => {
     EmbedExcludeArgs,
     readonly string[],
   ][]) {
-    for (const alias of aliases) map.set(normalize(alias), canonical)
+    for (const alias of aliases) map.set(normalizeFlagName(alias), canonical)
   }
   return map
 })()
@@ -269,11 +151,10 @@ const fail = (
   ...params: string[]
 ): ParseEmbedError => ({ error: true, code, params })
 
-/** Counts characters (emojis count as 1) */
-const size = (text: string) => [...text].length
+const charCount = (text: string) => [...text].length
 
 function isValidUrl(value: string, imageOnly: boolean): boolean {
-  if (size(value) > EMBED_LIMITS.url) return false
+  if (charCount(value) > EMBED_LIMITS.url) return false
 
   let url: URL
   try {
@@ -285,13 +166,10 @@ function isValidUrl(value: string, imageOnly: boolean): boolean {
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return false
   if (url.username || url.password) return false
 
-  // Require a real domain (block localhost, IPv6 and internal hosts)
   const host = url.hostname
   if (!host.includes('.') || PRIVATE_HOST.test(host)) return false
 
   if (imageOnly) {
-    // Many CDNs serve images without extension; reject only when an extension
-    // is present and not an image. Type can't be verified without a request
     const ext = /\.([a-z0-9]+)$/i.exec(url.pathname)?.[1]?.toLowerCase()
     if (ext && !IMAGE_EXTENSIONS.has(ext)) return false
   }
@@ -302,62 +180,37 @@ function isValidUrl(value: string, imageOnly: boolean): boolean {
 function parseColor(value: string): number | null {
   const hex = HEX_COLOR.exec(value)?.[1]
   if (!hex) return null
-
   const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex
   return Number.parseInt(full, 16)
 }
 
-function parseBoolean(value: string): boolean | null {
-  // Empty value (`--timestamp` alone) counts as enabled
-  if (value === '') return true
+const TRUE_VALUES = new Set([
+  'true',
+  'yes',
+  'y',
+  'on',
+  'sim',
+  's',
+  'si',
+  'verdadeiro',
+  'verdadero',
+  '1',
+])
 
-  const v = value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
-  if (
-    [
-      'true',
-      'yes',
-      'y',
-      'on',
-      'sim',
-      's',
-      'si',
-      'verdadeiro',
-      'verdadero',
-      '1',
-    ].includes(v)
-  )
-    return true
-  if (['false', 'no', 'n', 'off', 'nao', 'falso', '0'].includes(v)) return false
+const FALSE_VALUES = new Set(['false', 'no', 'n', 'off', 'nao', 'falso', '0'])
+
+function parseBoolean(value: string): boolean | null {
+  if (value === '') return true
+  const normalized = value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+  if (TRUE_VALUES.has(normalized)) return true
+  if (FALSE_VALUES.has(normalized)) return false
   return null
 }
 
-/**
- * Reads `--argument value with several words` and returns raw values,
- * already keyed by canonical argument name. Everything after an argument
- * until the next `--argument` is its value
- *
- * On error, reports ALL problematic arguments at once
- */
-function collect(
-  args: string[],
-  exclude: ReadonlySet<EmbedExcludeArgs>,
-): ParseEmbedError | { error: false; raw: Map<EmbedExcludeArgs, string> } {
-  return collectFlags(args, (name) => ALIAS_LOOKUP.get(normalize(name)), {
-    exclude,
-    pattern: FLAG,
-  })
-}
-
-export interface ParseEmbedOptions {
-  partial?: boolean
-}
-
-/** Validation rules for the final embed (standalone or merged) */
 function checkEmbed(
   embed: EmbedJson,
   requireContent: boolean,
 ): ParseEmbedError | null {
-  // Need visible content (color or timestamp alone is not an embed)
   if (requireContent) {
     const hasContent =
       embed.title ||
@@ -369,12 +222,12 @@ function checkEmbed(
     if (!hasContent) return fail('emptyEmbed')
   }
 
-  // Sum of all text lengths
   const total =
-    size(embed.title ?? '') +
-    size(embed.description ?? '') +
-    size(embed.footer?.text ?? '') +
-    size(embed.author?.name ?? '')
+    charCount(embed.title ?? '') +
+    charCount(embed.description ?? '') +
+    charCount(embed.footer?.text ?? '') +
+    charCount(embed.author?.name ?? '')
+
   if (total > EMBED_LIMITS.total) {
     const contributing: string[] = []
     if (embed.title) contributing.push('title')
@@ -387,11 +240,6 @@ function checkEmbed(
   return null
 }
 
-/**
- * Applies `patch` (from `parseEmbed(..., { partial: true })`) onto the saved
- * embed: only provided fields are updated, the rest kept. Re-validates
- * content and total size after merging
- */
 export function mergeEmbed(
   current: EmbedJson | null | undefined,
   patch: EmbedJson,
@@ -401,7 +249,6 @@ export function mergeEmbed(
   const merged: EmbedJson = {
     ...current,
     ...rest,
-    // `null` in patch means description omitted, keep current
     description: description ?? current?.description ?? null,
   }
 
@@ -411,33 +258,24 @@ export function mergeEmbed(
   return { error: false, embed: merged }
 }
 
-/**
- * Converts `args` into an embed JSON, validating everything before returning
- *
- * Usage example:
- *   --title Title --description Line 1\nLine 2 --color #F7D174
- *   --footer.text Footer --footer.icon https://site.com/icon.png --timestamp
- *
- * Also works in Portuguese and Spanish (see `EMBED_ALIASES`):
- *   --titulo Título --descricao Texto --cor #F7D174 --rodape Equipe
- *
- * @param exclude canonical argument names that cannot be used in this command
- * @param options.partial use when the result will be merged with an existing
- *   embed (see `mergeEmbed`): accepts only `--color`, for example. In that mode,
- *   `description: null` means "not provided"
- */
 export function parseEmbed(
   args: string[],
   exclude: EmbedExcludeArgs[] = [],
   options: ParseEmbedOptions = {},
 ): ParseEmbedResult {
-  const collected = collect(args, new Set(exclude))
+  const collected = collectFlags(
+    args,
+    (name) => ALIAS_LOOKUP.get(normalizeFlagName(name)),
+    {
+      exclude: new Set(exclude),
+      pattern: FLAG_PATTERN,
+    },
+  )
   if (collected.error) return collected
 
   const { raw } = collected
   if (raw.size === 0) return fail('emptyEmbed')
 
-  // Arguments without value (except `timestamp`, which may stand alone)
   const empty = [...raw]
     .filter(([name, value]) => value === '' && name !== 'timestamp')
     .map(([name]) => name)
@@ -447,14 +285,17 @@ export function parseEmbed(
 
   const title = raw.get('title')
   if (title !== undefined) {
-    if (size(title) > EMBED_LIMITS.title) return fail('titleTooLong', 'title')
+    if (charCount(title) > EMBED_LIMITS.title) {
+      return fail('titleTooLong', 'title')
+    }
     embed.title = title
   }
 
   const description = raw.get('description')
   if (description !== undefined) {
-    if (size(description) > EMBED_LIMITS.description)
+    if (charCount(description) > EMBED_LIMITS.description) {
       return fail('descriptionTooLong', 'description')
+    }
     embed.description = description
   }
 
@@ -473,8 +314,9 @@ export function parseEmbed(
 
   const thumbnail = raw.get('thumbnail')
   if (thumbnail !== undefined) {
-    if (!isValidUrl(thumbnail, true))
+    if (!isValidUrl(thumbnail, true)) {
       return fail('invalidThumbnailUrl', 'thumbnail')
+    }
     embed.thumbnail = { url: thumbnail }
   }
 
@@ -487,12 +329,15 @@ export function parseEmbed(
   const footerText = raw.get('footer.text')
   const footerIcon = raw.get('footer.icon')
   if (footerText !== undefined || footerIcon !== undefined) {
-    if (footerText === undefined)
+    if (footerText === undefined) {
       return fail('footerIconRequiresText', 'footer.icon')
-    if (size(footerText) > EMBED_LIMITS.footerText)
+    }
+    if (charCount(footerText) > EMBED_LIMITS.footerText) {
       return fail('footerTextTooLong', 'footer.text')
-    if (footerIcon !== undefined && !isValidUrl(footerIcon, true))
+    }
+    if (footerIcon !== undefined && !isValidUrl(footerIcon, true)) {
       return fail('invalidFooterIconUrl', 'footer.icon')
+    }
 
     embed.footer = { text: footerText }
     if (footerIcon !== undefined) embed.footer.icon_url = footerIcon
@@ -512,12 +357,15 @@ export function parseEmbed(
       if (authorUrl !== undefined) present.push('author.url')
       return fail('authorRequiresName', ...present)
     }
-    if (size(authorName) > EMBED_LIMITS.authorName)
+    if (charCount(authorName) > EMBED_LIMITS.authorName) {
       return fail('authorNameTooLong', 'author.name')
-    if (authorIcon !== undefined && !isValidUrl(authorIcon, true))
+    }
+    if (authorIcon !== undefined && !isValidUrl(authorIcon, true)) {
       return fail('invalidAuthorIconUrl', 'author.icon')
-    if (authorUrl !== undefined && !isValidUrl(authorUrl, false))
+    }
+    if (authorUrl !== undefined && !isValidUrl(authorUrl, false)) {
       return fail('invalidAuthorUrl', 'author.url')
+    }
 
     embed.author = { name: authorName }
     if (authorIcon !== undefined) embed.author.icon_url = authorIcon

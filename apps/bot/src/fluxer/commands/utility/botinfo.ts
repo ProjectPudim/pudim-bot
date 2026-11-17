@@ -1,7 +1,8 @@
+import { Category, emojis } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { getBotStats } from '#bot/utils/bot'
-import { emojis } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
+import { Embed, getBotStats, toUnixTimestamp } from '#bot/utils'
+
+const BYTES_PER_MB = 1024 * 1024
 
 export default createCommand({
   name: 'botinfo',
@@ -10,20 +11,17 @@ export default createCommand({
     'pt-BR': 'Mostra informações sobre o bot.',
     'es-ES': 'Muestra información sobre el bot.',
   },
-  category: 'utility',
+  category: Category.Utilities,
   usage: '{prefix}botinfo',
   aliases: ['pudim', 'pudiminfo'],
   async run(ctx) {
     const { client, t } = ctx
+    const botUser = client.user!
 
-    const { heapUsed } = process.memoryUsage()
-    const toMB = (bytes: number) => (bytes / 1024 / 1024).toFixed(2)
-
+    const heapMb = (process.memoryUsage().heapUsed / BYTES_PER_MB).toFixed(2)
     const startedAt = Math.floor((Date.now() - (client.uptime ?? 0)) / 1000)
-    const createdAt = Math.floor(client.user!.createdAt.getTime() / 1000)
-
-    const botAvatar = client.user!.displayAvatarURL()
-
+    const createdAt = toUnixTimestamp(botUser.createdAt) ?? startedAt
+    const botAvatar = botUser.displayAvatarURL()
     const { users, guilds } = getBotStats(client)
 
     const embed = Embed({
@@ -35,8 +33,8 @@ export default createCommand({
           value: [
             `> **${t('commands.botinfo.fields.technical.createdAt')}** <t:${createdAt}:f>`,
             `> **${t('commands.botinfo.fields.technical.startedAt')}** <t:${startedAt}:R>`,
-            `> **${t('commands.botinfo.fields.technical.memory')}:** ${toMB(heapUsed)} MB`,
-          ].join('\n'),
+            `> **${t('commands.botinfo.fields.technical.memory')}:** ${heapMb} MB`,
+          ],
           inline: true,
         },
         {
@@ -44,7 +42,7 @@ export default createCommand({
           value: [
             `> **${t('commands.botinfo.fields.technologies.language')}:** ${emojis.typescript} TypeScript`,
             `> **${t('commands.botinfo.fields.technologies.database')}:** ${emojis.mongodb} MongoDB`,
-          ].join('\n'),
+          ],
           inline: true,
         },
       ],

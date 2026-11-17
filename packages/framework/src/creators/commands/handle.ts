@@ -1,9 +1,4 @@
-import {
-  PermissionsBitField,
-  type Client,
-  type GuildChannel,
-  type Message,
-} from '@fluxerjs/core'
+import type { Client, Message } from '@fluxerjs/core'
 import { createContext, createNotFoundContext } from '../../context'
 import { parseCommandArgs } from '../../utils/args'
 import {
@@ -21,19 +16,26 @@ import {
 import { logger, type CoreLogger } from '../../utils/logger'
 import { CommandFailureError, isCommandFailureError } from './failures'
 import {
+  reportError,
+  reportStop,
+  runFailureHooks,
+  runHook,
+  type HookInfo,
+} from './hooks'
+import {
   middlewareList,
   MiddlewareStopError,
   runMiddlewares,
   type Middlewares,
 } from './middleware'
 import type { CommandRegistry } from './registry'
+import { runRestrictions } from './restrictions'
 import type {
   AnyCommand,
   AnyCommandContext,
   CommandContext,
   CommandErrorHandler,
   CommandHooks,
-  CommandNotFoundContext,
   CommandNotFoundErrorHandler,
   CommandNotFoundHandler,
   MiddlewareStopHandler,
@@ -61,10 +63,116 @@ export interface HandleCommandOptions {
 export type HandleCommandResult =
   'not-command' | 'not-found' | 'disabled' | 'stopped' | 'error' | 'executed'
 
-interface HookInfo {
-  duration: number
-  result: HandleCommandResult
-  error?: unknown
+async function resolvePrefix(
+  resolver: PrefixResolver,
+  message: Message,
+  content: string,
+): Promise<string | undefined> {
+  const value =
+    typeof resolver === 'function' ? await resolver(message) : resolver
+  const prefixes = [
+    ...new Set(typeof value === 'string' ? [value] : (value ?? [])),
+  ]
+    .filter((prefix) => prefix.length > 0)
+    .sort((a, b) => b.length - a.length)
+
+  return prefixes.find((candidate) => content.startsWith(candidate))
+}
+
+function normalizeCooldown(
+  value: AnyCommand['cooldown'],
+): { duration: number; scope?: CooldownScope } | undefined {
+  if (value === undefined) return undefined
+  return typeof value === 'number' ? { duration: value, scope: 'user' } : value
+}
+
+function normalizeConcurrency(
+  value: AnyCommand['concurrency'],
+): { limit: number; scope?: string } | undefined {
+  if (value === undefined) return undefined
+  return typeof value === 'number' ? { limit: value, scope: 'user' } : value
+}
+
+async function validateCommandArgs(
+  command: AnyCommand,
+  rawArgs: string,
+  ctx: CommandContext,
+): Promise<void> {
+  if (!command.parseArgs && !command.argsSchema) return
+
+  const parsed = parseCommandArgs(rawArgs)
+  if (!parsed.ok) {
+    throw new CommandFailureError({
+      kind: 'arguments',
+      code: 'PARSE_ERROR',
+      parseError: parsed.error,
+    })
+  }
+
+  ;(ctx as { parsedArgs?: unknown }).parsedArgs = parsed.value
+
+  if (command.argsSchema) {
+    const validation = await command.argsSchema['~standard'].validate({
+      args: parsed.value.positionals,
+      flags: parsed.value.flags,
+    })
+    if (validation.issues) {
+      throw new CommandFailureError({
+        kind: 'arguments',
+        code: 'INVALID_ARGUMENTS',
+        issues: validation.issues,
+      })
+    }
+    ;(ctx as { validated?: unknown }).validated = validation.value
+  }
+}
+
+async function acquireCommandCooldown(
+  command: AnyCommand,
+  message: Message,
+  client: Client,
+  options: HandleCommandOptions,
+): Promise<void> {
+  const config = normalizeCooldown(command.cooldown)
+  if (!config) return
+
+  const scope: CooldownScope = config.scope ?? 'user'
+  const adapter = options.cooldownAdapter ?? getDefaultCooldownAdapter()
+  const policy = options.cooldownPolicy ?? 'block'
+  const botIdentity = options.botIdentity ?? client.user?.id ?? 'default'
+
+  const key = cooldownKey(
+    command.name,
+    scope,
+    {
+      userId: message.author.id,
+      guildId: message.guildId,
+      channelId: message.channelId,
+    },
+    botIdentity,
+  )
+
+  let result: CooldownAcquireResult
+  try {
+    result = await adapter.acquire(key, config.duration)
+  } catch {
+    if (policy === 'allow') return
+    throw new CommandFailureError({
+      kind: 'cooldown',
+      code: 'COOLDOWN_UNAVAILABLE',
+      scope,
+      retryAfter: 0,
+    })
+  }
+
+  if (!result.acquired) {
+    throw new CommandFailureError({
+      kind: 'cooldown',
+      code: 'COOLDOWN',
+      scope,
+      retryAfter: result.retryAfter,
+    })
+  }
 }
 
 export async function handleCommand(
@@ -83,17 +191,8 @@ export async function handleCommand(
   let releaseConcurrency: (() => void) | undefined
 
   try {
-    const value =
-      typeof options.prefix === 'function'
-        ? await options.prefix(message)
-        : options.prefix
-    const prefixes = [
-      ...new Set(typeof value === 'string' ? [value] : (value ?? [])),
-    ]
-      .filter((prefix) => prefix.length > 0)
-      .sort((a, b) => b.length - a.length)
     const content = message.content.trimStart()
-    const prefix = prefixes.find((candidate) => content.startsWith(candidate))
+    const prefix = await resolvePrefix(options.prefix, message, content)
     if (!prefix) return 'not-command'
 
     const rest = content.slice(prefix.length).trimStart()
@@ -131,105 +230,34 @@ export async function handleCommand(
       ...(options.ownerIds ?? []),
       ...(command.ownerIds ?? []),
     ]
+    const concurrencyConfig = normalizeConcurrency(command.concurrency)
 
-    // Declarative restrictions
-    await runRestrictions(command, commandContext, effectiveOwnerIds)
+    let executed = false
+    const executeCommand = async () => {
+      executed = true
 
-    // Optional parsing and validation
-    if (command.parseArgs || command.argsSchema) {
-      const parsed = parseCommandArgs(rawArgs)
-      if (!parsed.ok) {
-        throw new CommandFailureError({
-          kind: 'arguments',
-          code: 'PARSE_ERROR',
-          parseError: parsed.error,
-        })
-      }
-      ;(commandContext as { parsedArgs?: unknown }).parsedArgs = parsed.value
-      if (command.argsSchema) {
-        const validation = await command.argsSchema['~standard'].validate({
-          args: parsed.value.positionals,
-          flags: parsed.value.flags,
-        })
-        if (validation.issues) {
-          throw new CommandFailureError({
-            kind: 'arguments',
-            code: 'INVALID_ARGUMENTS',
-            issues: validation.issues,
-          })
-        }
-        ;(commandContext as { validated?: unknown }).validated =
-          validation.value
-      }
-    }
+      await runRestrictions(command, commandContext, effectiveOwnerIds)
+      await validateCommandArgs(command, rawArgs, commandContext)
+      await acquireCommandCooldown(command, message, client, options)
 
-    // Cooldown
-    const cooldownConfig = normalizeCooldown(command.cooldown)
-    if (cooldownConfig) {
-      const scope = (cooldownConfig.scope ?? 'user') as CooldownScope
-      const adapter = options.cooldownAdapter ?? getDefaultCooldownAdapter()
-      const policy = options.cooldownPolicy ?? 'block'
-      const botIdentity = options.botIdentity ?? client.user?.id ?? 'default'
-      const key = cooldownKey(
-        command.name,
-        scope,
-        {
+      if (concurrencyConfig) {
+        const scope = (concurrencyConfig.scope ?? 'user') as ConcurrencyScope
+        const key = concurrencyKey(command.name, scope, {
           userId: message.author.id,
           guildId: message.guildId,
           channelId: message.channelId,
-        },
-        botIdentity,
-      )
-      let result: CooldownAcquireResult
-      try {
-        result = await adapter.acquire(key, cooldownConfig.duration)
-      } catch {
-        if (policy === 'allow') {
-          result = { acquired: true, token: 'allowed' }
-        } else {
+        })
+        const release = tryAcquireConcurrency(key, concurrencyConfig.limit)
+        if (!release) {
           throw new CommandFailureError({
-            kind: 'cooldown',
-            code: 'COOLDOWN_UNAVAILABLE',
+            kind: 'concurrency',
+            code: 'CONCURRENCY_LIMIT',
             scope,
-            retryAfter: 0,
           })
         }
+        releaseConcurrency = release
       }
-      if (!result.acquired) {
-        throw new CommandFailureError({
-          kind: 'cooldown',
-          code: 'COOLDOWN',
-          scope,
-          retryAfter: result.retryAfter,
-        })
-      }
-    }
 
-    // Concurrency
-    const concurrencyConfig = normalizeConcurrency(command.concurrency)
-    if (concurrencyConfig) {
-      const scope = (concurrencyConfig.scope ?? 'user') as ConcurrencyScope
-      const limit = concurrencyConfig.limit
-      const key = concurrencyKey(command.name, scope, {
-        userId: message.author.id,
-        guildId: message.guildId,
-        channelId: message.channelId,
-      })
-      const release = tryAcquireConcurrency(key, limit)
-      if (!release) {
-        throw new CommandFailureError({
-          kind: 'concurrency',
-          code: 'CONCURRENCY_LIMIT',
-          scope,
-        })
-      }
-      releaseConcurrency = release
-    }
-
-    let executed = false
-    const run = async () => {
-      executed = true
-      // before hooks (global then command)
       await runHook(options.hooks?.before, commandContext)
       await runHook(command.hooks?.before, commandContext)
 
@@ -249,12 +277,12 @@ export async function handleCommand(
     ]
 
     try {
-      await runMiddlewares(middlewares, commandContext, run)
+      await runMiddlewares(middlewares, commandContext, executeCommand)
     } catch (error) {
+      thrown = error
+
       if (error instanceof MiddlewareStopError) {
-        thrown = error
         result = 'stopped'
-        // failure hooks
         const info: HookInfo = {
           duration: Date.now() - startedAt,
           result: 'stopped',
@@ -270,7 +298,7 @@ export async function handleCommand(
         await reportStop(commandContext, error, options)
         return 'stopped'
       }
-      thrown = error
+
       result = 'error'
       const info: HookInfo = {
         duration: Date.now() - startedAt,
@@ -292,250 +320,49 @@ export async function handleCommand(
       result = 'stopped'
       return 'stopped'
     }
+
     result = 'executed'
     return 'executed'
   } catch (error) {
     thrown = error
-    if (isCommandFailureError(error)) {
-      result = 'error'
+    result = 'error'
+
+    if (isCommandFailureError(error) && ctx?.command) {
       const info: HookInfo = {
         duration: Date.now() - startedAt,
         result: 'error',
         error,
       }
-      if (ctx?.command) {
-        await runFailureHooks(
-          options.hooks,
-          (ctx as CommandContext).command.hooks,
-          ctx as CommandContext,
-          error,
-          info,
-        )
-      }
-      await reportError(ctx, error, options)
-      return 'error'
+      await runFailureHooks(
+        options.hooks,
+        (ctx as CommandContext).command.hooks,
+        ctx as CommandContext,
+        error,
+        info,
+      )
     }
-    result = 'error'
+
     await reportError(ctx, error, options)
     return 'error'
   } finally {
     releaseConcurrency?.()
-    const info: HookInfo = {
-      duration: Date.now() - startedAt,
-      result: thrown ? result : result,
-      error: thrown,
-    }
-    if (ctx) {
+
+    if (ctx?.command) {
+      const info: HookInfo = {
+        duration: Date.now() - startedAt,
+        result,
+        error: thrown,
+      }
       try {
-        if (ctx.command) {
-          await runHook(options.hooks?.finally, ctx as CommandContext, info)
-          await runHook(
-            (ctx as CommandContext).command.hooks?.finally,
-            ctx as CommandContext,
-            info,
-          )
-        } else {
-          // not-found context: no command hooks
-        }
+        await runHook(options.hooks?.finally, ctx as CommandContext, info)
+        await runHook(
+          (ctx as CommandContext).command.hooks?.finally,
+          ctx as CommandContext,
+          info,
+        )
       } catch (hookError) {
         log.error('[commands] Finally hook failed', hookError)
       }
     }
-  }
-}
-
-async function runRestrictions(
-  command: AnyCommand,
-  ctx: CommandContext,
-  effectiveOwnerIds: readonly string[],
-): Promise<void> {
-  const contextMode = command.context ?? 'both'
-  const actualContext: 'guild' | 'dm' = ctx.guildId ? 'guild' : 'dm'
-  const allowed = contextMode === 'both' || contextMode === actualContext
-  if (!allowed) {
-    throw new CommandFailureError({
-      kind: 'context',
-      code: 'INVALID_CONTEXT',
-      expected: contextMode,
-      actual: actualContext,
-    })
-  }
-
-  if (command.ownerOnly) {
-    if (!effectiveOwnerIds.includes(ctx.author.id)) {
-      throw new CommandFailureError({
-        kind: 'owner',
-        code: 'OWNER_ONLY',
-      })
-    }
-  }
-
-  // User permissions
-  if (command.userPermissions) {
-    const member = ctx.message.member ?? (await ctx.resolveMember())
-    const channel = ctx.channel as unknown as GuildChannel | null
-    let perms = member?.permissions
-    if (member && channel && typeof member.permissionsIn === 'function') {
-      try {
-        perms = member.permissionsIn(channel)
-      } catch {
-        // fall back to guild permissions
-      }
-    }
-    const required = command.userPermissions
-    const missing =
-      perms instanceof PermissionsBitField
-        ? perms.missing(required)
-        : new PermissionsBitField(0).missing(required)
-    // If no member, all required are missing
-    if (!member) {
-      throw new CommandFailureError({
-        kind: 'permissions',
-        code: 'MISSING_PERMISSIONS',
-        target: 'user',
-        missing: [required],
-      })
-    }
-    if (missing.length > 0) {
-      throw new CommandFailureError({
-        kind: 'permissions',
-        code: 'MISSING_PERMISSIONS',
-        target: 'user',
-        missing,
-      })
-    }
-  }
-
-  // Bot permissions
-  if (command.botPermissions) {
-    const guild = ctx.guild
-    const channel = ctx.channel as unknown as GuildChannel | null
-    let botMember = guild?.members?.me ?? null
-    if (!botMember && guild) {
-      try {
-        botMember = await guild.members.fetch(clientId(ctx.client))
-      } catch (error) {
-        throw new Error('[commands] Failed to resolve bot member.', {
-          cause: error,
-        })
-      }
-    }
-    if (!botMember) {
-      // DM or no guild: bot permissions cannot be checked; fail as missing
-      throw new CommandFailureError({
-        kind: 'permissions',
-        code: 'MISSING_PERMISSIONS',
-        target: 'bot',
-        missing: [command.botPermissions],
-      })
-    }
-    let perms = botMember.permissions
-    if (channel && typeof botMember.permissionsIn === 'function') {
-      try {
-        perms = botMember.permissionsIn(channel)
-      } catch {
-        // fall back
-      }
-    }
-    const missing = perms.missing(command.botPermissions)
-    if (missing.length > 0) {
-      throw new CommandFailureError({
-        kind: 'permissions',
-        code: 'MISSING_PERMISSIONS',
-        target: 'bot',
-        missing,
-      })
-    }
-  }
-}
-
-function clientId(client: Client): string {
-  return client.user?.id ?? ''
-}
-
-function normalizeCooldown(value: AnyCommand['cooldown']):
-  | {
-      duration: number
-      scope?: CooldownScope
-    }
-  | undefined {
-  if (value === undefined) return undefined
-  if (typeof value === 'number') return { duration: value, scope: 'user' }
-  return value
-}
-
-function normalizeConcurrency(
-  value: AnyCommand['concurrency'],
-): { limit: number; scope?: string } | undefined {
-  if (value === undefined) return undefined
-  if (typeof value === 'number') return { limit: value, scope: 'user' }
-  return value
-}
-
-async function runHook(
-  hook: unknown,
-  ctx: CommandContext,
-  info?: HookInfo,
-): Promise<void> {
-  const fn = hook as ((...args: unknown[]) => unknown) | undefined
-  if (!fn) return
-  try {
-    await fn(ctx, info)
-  } catch (error) {
-    logger.error('[commands] Hook failed', error)
-    throw error
-  }
-}
-
-async function runFailureHooks(
-  globalHooks: CommandHooks | undefined,
-  commandHooks: CommandHooks | undefined,
-  ctx: CommandContext,
-  error: unknown,
-  info: HookInfo,
-): Promise<void> {
-  try {
-    await globalHooks?.failure?.(ctx, error, info)
-  } catch (hookError) {
-    logger.error('[commands] Failure hook failed', hookError)
-  }
-  try {
-    await commandHooks?.failure?.(ctx, error, info)
-  } catch (hookError) {
-    logger.error('[commands] Failure hook failed', hookError)
-  }
-}
-
-async function reportStop(
-  ctx: CommandContext,
-  stop: MiddlewareStopError,
-  options: HandleCommandOptions,
-): Promise<void> {
-  const log = options.logger ?? logger
-  try {
-    await options.onMiddlewareStop?.(ctx, stop)
-  } catch (handlerError) {
-    log.error('[commands] Stop handler failed', handlerError)
-  }
-}
-
-async function reportError(
-  ctx: AnyCommandContext | undefined,
-  error: unknown,
-  options: HandleCommandOptions,
-): Promise<void> {
-  const log = options.logger ?? logger
-  try {
-    if (ctx?.command && options.onError)
-      await options.onError(ctx as CommandContext, error)
-    else if (ctx && !ctx.command && options.onNotFoundError)
-      await options.onNotFoundError(ctx as CommandNotFoundContext, error)
-    else
-      log.error(
-        `[commands] Error in "${ctx?.invokedName ?? 'prefix resolution'}"`,
-        error,
-      )
-  } catch (handlerError) {
-    log.error('[commands] Error handler failed', handlerError)
   }
 }

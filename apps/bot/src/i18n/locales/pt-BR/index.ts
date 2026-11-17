@@ -12,12 +12,14 @@ import channelinfo from './commands/utility/channelinfo'
 import emojiinfo from './commands/utility/emojiinfo'
 import help from './commands/utility/help'
 import inviteinfo from './commands/utility/inviteinfo'
+import ping from './commands/utility/ping'
 import roleinfo from './commands/utility/roleinfo'
 import serverbanner from './commands/utility/serverbanner'
 import servericon from './commands/utility/servericon'
 import serverinfo from './commands/utility/serverinfo'
 import userbanner from './commands/utility/userbanner'
 import userinfo from './commands/utility/userinfo'
+import context from './common/context'
 import cooldown from './common/cooldown'
 import duration from './common/duration'
 import invalid from './common/invalid'
@@ -27,6 +29,7 @@ import permissions from './common/permissions'
 export default {
   commands: {
     help,
+    ping,
     avatar,
     botinfo,
     botinvite,
@@ -47,5 +50,13 @@ export default {
     reverse,
     ship,
   },
-  common: { and: 'e', cooldown, permissions, duration, invalid, notFound },
+  common: {
+    and: 'e',
+    context,
+    cooldown,
+    permissions,
+    duration,
+    invalid,
+    notFound,
+  },
 }

@@ -5,6 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./cooldown": "./src/cooldown/index.ts",
+    "./cooldown/*": "./src/cooldown/*.ts",
     "./*": "./src/*.ts"
   },
   "scripts": {

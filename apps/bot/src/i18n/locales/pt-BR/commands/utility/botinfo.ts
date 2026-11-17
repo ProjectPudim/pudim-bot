@@ -4,9 +4,7 @@ export default {
   messages: {},
   title: 'Informações do Pudim',
   description: (client: Client, users: number, guilds: number) =>
-    [
-      `**Prazer, me chamo Pudim!** Eu sou um bot multifuncional feito para transformar sua comunidade em um lugar mais doce e funcional. Atualmente, estou em ajudando **${guilds.toLocaleString('pt-BR')} servidores** e divertindo **${users.toLocaleString('pt-BR')} usuários** com **${client.commands.filter((cmd) => !cmd.hidden).length} comandos**!`,
-    ].join('\n'),
+    `**Prazer, me chamo Pudim!** Eu sou um bot multifuncional feito para transformar sua comunidade em um lugar mais doce e funcional. Atualmente, estou ajudando **${guilds.toLocaleString('pt-BR')} servidores** e divertindo **${users.toLocaleString('pt-BR')} usuários** com **${client.commands.filter((cmd) => !cmd.hidden).length} comandos**!`,
   fields: {
     technical: {
       name: 'Ficha técnica',

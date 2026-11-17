@@ -1,19 +1,11 @@
-import { createCommand } from '#bot/fluxer'
-import { roleplayManager } from '#bot/managers'
+import { createRoleplayCommand } from '#bot/modules/roleplay'
 
-const USAGE = '{prefix}kiss <@user|id>'
-
-export default createCommand({
-  name: 'kiss',
+export default createRoleplayCommand({
+  action: 'kiss',
   description: 'Kisses a user.',
   descriptionLocalizations: {
     'pt-BR': 'Beija um usuário.',
     'es-ES': 'Besa a un usuario.',
   },
-  category: 'fun',
   aliases: ['beijo', 'beijar', 'smooch'],
-  usage: USAGE,
-  async run(ctx) {
-    await roleplayManager.command(ctx, 'kiss', USAGE)
-  },
 })

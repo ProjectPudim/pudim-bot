@@ -1,9 +1,9 @@
 import { randomInt } from 'node:crypto'
+import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { colors } from '#bot/utils/constants'
-import { Embed } from '#bot/utils/embed'
+import { Embed, safeReplyMentions } from '#bot/utils'
 
-const USAGE = '{prefix}dice [NdS]'
+const DICE_PATTERN = /^(\d+)d(\d+)$/
 
 export default createCommand({
   name: 'dice',
@@ -12,14 +12,14 @@ export default createCommand({
     'pt-BR': 'Rola dados.',
     'es-ES': 'Lanza dados.',
   },
-  category: 'fun',
-  usage: USAGE,
+  category: Category.Fun,
+  usage: '{prefix}dice [NdS]',
   aliases: ['roll'],
   async run(ctx) {
     const { t, args, author } = ctx
-
     const input = (args[0] ?? '1d6').toLowerCase()
-    const match = /^(\d+)d(\d+)$/.exec(input)
+    const match = DICE_PATTERN.exec(input)
+
     if (!match) {
       await ctx.reply({
         content: t('commands.dice.messages.invalidFormat'),
@@ -44,16 +44,8 @@ export default createCommand({
       return
     }
 
-    const rolls: number[] = []
-    for (let i = 0; i < count; i++) {
-      rolls.push(randomInt(1, sides + 1))
-    }
-
+    const rolls = Array.from({ length: count }, () => randomInt(1, sides + 1))
     const total = rolls.reduce((sum, value) => sum + value, 0)
-    const highest = Math.max(...rolls)
-    const lowest = Math.min(...rolls)
-    const average = total / count
-
     const notation = `${count}d${sides}`
 
     const embed =
@@ -74,17 +66,17 @@ export default createCommand({
             fields: [
               {
                 name: t('commands.dice.highest'),
-                value: String(highest),
+                value: String(Math.max(...rolls)),
                 inline: true,
               },
               {
                 name: t('commands.dice.lowest'),
-                value: String(lowest),
+                value: String(Math.min(...rolls)),
                 inline: true,
               },
               {
                 name: t('commands.dice.average'),
-                value: average.toFixed(1),
+                value: (total / count).toFixed(1),
                 inline: true,
               },
             ],
@@ -92,12 +84,7 @@ export default createCommand({
 
     await ctx.reply({
       embeds: [embed],
-      allowedMentions: {
-        parse: [],
-        users: [author.id],
-        roles: [],
-        repliedUser: true,
-      },
+      allowedMentions: safeReplyMentions(author.id),
     })
   },
 })
