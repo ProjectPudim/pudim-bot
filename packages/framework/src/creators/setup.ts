@@ -4,29 +4,33 @@ import {
   middlewareList,
   type Middlewares,
 } from './commands/middleware'
-import type { CommandRegistry } from './commands/registry'
+import { CommandRegistry } from './commands/registry'
 import type {
   CommandErrorHandler,
+  CommandHooks,
   CommandNotFoundErrorHandler,
   CommandNotFoundHandler,
   MiddlewareStopHandler,
   PrefixResolver,
 } from './commands/types'
 import { createEvent } from './events/create'
-import type { EventRegistry } from './events/registry'
+import { EventRegistry } from './events/registry'
 import type { EventErrorHandler } from './events/types'
-import { ensureCreatorsRuntime, type ResolvedCreatorsConfig } from './runtime'
+import {
+  ensureCreatorsRuntime,
+  type CreatorsRuntime,
+  type ResolvedCreatorsConfig,
+} from './runtime'
 
 export interface CommandSection {
   prefix?: PrefixResolver
-  /** Run before the command's own middlewares */
   middlewares?: Middlewares
-  /** Any error thrown by a middleware or by the command's `run` */
   onError?: CommandErrorHandler
-  /** A middleware called `middle.stop()` */
   onMiddlewareStop?: MiddlewareStopHandler
   notFound?: CommandNotFoundHandler
   onNotFoundError?: CommandNotFoundErrorHandler
+  ownerIds?: readonly string[]
+  hooks?: CommandHooks
 }
 
 export interface EventSection {
@@ -38,8 +42,7 @@ export interface SetupCreatorsOptions {
   events?: EventSection
 }
 
-/** The only place where `create*` functions are exposed */
-export interface Creators {
+export interface Creators extends CreatorsRuntime {
   createCommand: typeof createCommand
   createEvent: typeof createEvent
   createMiddleware: typeof createMiddleware
@@ -63,6 +66,19 @@ function assertPrefix(prefix: unknown): void {
   }
 }
 
+function assertHooks(hooks: unknown, label: string): void {
+  if (hooks === undefined) return
+  if (typeof hooks !== 'object' || hooks === null) {
+    throw new Error(`[creators] ${label} must be an object.`)
+  }
+  for (const key of ['before', 'success', 'failure', 'finally'] as const) {
+    const value = (hooks as Record<string, unknown>)[key]
+    if (value !== undefined && typeof value !== 'function') {
+      throw new Error(`[creators] ${label}.${key} must be a function.`)
+    }
+  }
+}
+
 export function setupCreators(options: SetupCreatorsOptions = {}): Creators {
   const commands = options.commands ?? {}
   const events = options.events ?? {}
@@ -79,12 +95,23 @@ export function setupCreators(options: SetupCreatorsOptions = {}): Creators {
     if (handler !== undefined && typeof handler !== 'function')
       throw new Error(`[creators] ${name} must be a function.`)
   }
+  if (
+    commands.ownerIds !== undefined &&
+    (!Array.isArray(commands.ownerIds) ||
+      commands.ownerIds.some((id) => typeof id !== 'string'))
+  ) {
+    throw new Error('[creators] ownerIds must be an array of strings.')
+  }
+  assertHooks(commands.hooks, 'hooks')
 
-  const rt = ensureCreatorsRuntime()
+  const runtime: CreatorsRuntime = {
+    config: {},
+    commands: new CommandRegistry(),
+    events: new EventRegistry(),
+  }
 
-  // Only keys that were actually passed override the previous config
+  const rt = runtime
   rt.config = {
-    ...rt.config,
     ...('prefix' in commands ? { prefix: commands.prefix } : {}),
     ...('middlewares' in commands ? { middlewares: commands.middlewares } : {}),
     ...('onError' in commands ? { onCommandError: commands.onError } : {}),
@@ -95,7 +122,18 @@ export function setupCreators(options: SetupCreatorsOptions = {}): Creators {
     ...('onNotFoundError' in commands
       ? { onNotFoundError: commands.onNotFoundError }
       : {}),
+    ...('ownerIds' in commands ? { ownerIds: commands.ownerIds } : {}),
+    ...('hooks' in commands ? { hooks: commands.hooks } : {}),
     ...('onError' in events ? { onEventError: events.onError } : {}),
+  }
+
+  // Preserve global default for callers that do not pass creators to bootstrap.
+  const defaultRuntime = ensureCreatorsRuntime()
+  if (!defaultRuntime.config.prefix && !defaultRuntime.commands.size) {
+    // only seed default if untouched
+    defaultRuntime.config = { ...rt.config }
+    defaultRuntime.commands = rt.commands
+    defaultRuntime.events = rt.events
   }
 
   return {
@@ -107,5 +145,5 @@ export function setupCreators(options: SetupCreatorsOptions = {}): Creators {
     get config() {
       return rt.config
     },
-  }
+  } as Creators
 }

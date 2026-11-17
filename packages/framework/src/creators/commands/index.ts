@@ -1,6 +1,7 @@
 // `createCommand` and `createMiddleware` are intentionally NOT exported here:
 // they are only reachable through `setupCreators()`.
 export * from './types'
+export * from './failures'
 export {
   MiddlewareStopError,
   type Middleware,

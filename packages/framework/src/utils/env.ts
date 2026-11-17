@@ -6,26 +6,25 @@ export async function validateEnv<const T extends StandardSchemaV1>(
 ): Promise<StandardSchemaV1.InferOutput<T>> {
   const result = await schema['~standard'].validate(process.env)
   if (result.issues) {
-    console.error(
-      result.issues
-        .map((issue) =>
-          format(
-            styleText('red', '✖︎ ENV VAR %s ➜ %s'),
-            styleText(
-              'bold',
-              issue.path
-                ?.map((segment) =>
-                  String(typeof segment === 'object' ? segment.key : segment),
-                )
-                .join('.') ?? '',
-            ),
-            styleText('gray', issue.message),
+    const message = result.issues
+      .map((issue) =>
+        format(
+          styleText('red', 'ENV VAR %s -> %s'),
+          styleText(
+            'bold',
+            issue.path
+              ?.map((segment) =>
+                String(typeof segment === 'object' ? segment.key : segment),
+              )
+              .join('.') ?? '',
           ),
-        )
-        .join('\n'),
-    )
-    process.exit(1)
+          styleText('gray', issue.message),
+        ),
+      )
+      .join('\n')
+    console.error(message)
+    throw new Error('[env] Environment validation failed.\n' + message)
   }
-  console.info(styleText('dim', '☰ Environment variables validated ✓'))
+  console.info(styleText('dim', 'Environment variables validated'))
   return result.value
 }

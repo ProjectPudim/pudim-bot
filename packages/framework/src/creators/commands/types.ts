@@ -13,6 +13,11 @@ import type {
   FrameworkTypeConfig,
   LocalizationMap,
 } from '../../types'
+import type { ParsedCommandArgs } from '../../utils/args'
+import type { ConcurrencyOptions } from '../../utils/concurrency'
+import type { CooldownOptions } from '../../utils/cooldown'
+import type { StandardSchemaV1 } from '../../utils/standard-schema'
+import type { HandleCommandResult } from './handle'
 import type { Middlewares, MiddlewareStopError } from './middleware'
 
 export type PrefixValue = string | readonly string[] | null | undefined
@@ -35,6 +40,23 @@ export type MiddlewareStopHandler = (
   stop: MiddlewareStopError,
 ) => void | Promise<void>
 
+export interface CommandHooks {
+  before?: (ctx: CommandContext) => void | Promise<void>
+  success?: (
+    ctx: CommandContext,
+    info: { duration: number; result: HandleCommandResult },
+  ) => void | Promise<void>
+  failure?: (
+    ctx: CommandContext,
+    error: unknown,
+    info: { duration: number; result: HandleCommandResult },
+  ) => void | Promise<void>
+  finally?: (
+    ctx: CommandContext,
+    info: { duration: number; result: HandleCommandResult },
+  ) => void | Promise<void>
+}
+
 export interface BaseCommandOptions {
   name: string
   description: string
@@ -44,6 +66,16 @@ export interface BaseCommandOptions {
   hidden?: boolean
   enabled?: boolean
   metadata?: CommandMetadata
+  context?: 'guild' | 'dm' | 'both'
+  ownerOnly?: boolean
+  ownerIds?: readonly string[]
+  userPermissions?: PermissionResolvable
+  botPermissions?: PermissionResolvable
+  cooldown?: number | CooldownOptions
+  concurrency?: number | ConcurrencyOptions
+  parseArgs?: boolean
+  argsSchema?: StandardSchemaV1
+  hooks?: CommandHooks
   /** Run after the global middlewares */
   middlewares?: Middlewares
   run?: (ctx: CommandContext) => void | Promise<void>
@@ -85,6 +117,8 @@ export interface InvocationContext
   readonly guildId: Message['guildId']
   readonly args: string[]
   readonly rawArgs: string
+  readonly parsedArgs?: ParsedCommandArgs
+  readonly validated?: unknown
   readonly prefix: string
   readonly commandName: string
   readonly invokedName: string
@@ -101,6 +135,11 @@ export interface CommandContext<
   TExtra extends object = EmptyObject,
 > extends InvocationContext {
   readonly command: Command<TExtra>
+  readonly validated: TExtra extends {
+    argsSchema: infer Schema extends StandardSchemaV1
+  }
+    ? StandardSchemaV1.InferOutput<Schema>
+    : unknown
 }
 
 export interface CommandNotFoundContext extends InvocationContext {
@@ -163,6 +202,16 @@ export interface CommandBase<TExtra extends object = EmptyObject> {
   }
     ? Metadata
     : CommandMetadata
+  readonly context?: 'guild' | 'dm' | 'both'
+  readonly ownerOnly?: boolean
+  readonly ownerIds?: readonly string[]
+  readonly userPermissions?: PermissionResolvable
+  readonly botPermissions?: PermissionResolvable
+  readonly cooldown?: number | CooldownOptions
+  readonly concurrency?: number | ConcurrencyOptions
+  readonly parseArgs?: boolean
+  readonly argsSchema?: StandardSchemaV1
+  readonly hooks?: CommandHooks
   readonly middlewares?: Middlewares
   readonly file?: string
   readonly __isCommand: true
@@ -175,8 +224,11 @@ export type Command<TExtra extends object = EmptyObject> = CommandBase<TExtra> &
 export type AnyCommand = Command
 export type CommandInfo = Omit<
   AnyCommand,
-  'run' | '__isCommand' | 'middlewares'
->
+  'run' | '__isCommand' | 'middlewares' | 'argsSchema' | 'hooks'
+> & {
+  readonly cooldown?: { duration: number; scope: string }
+  readonly concurrency?: { limit: number; scope: string }
+}
 
 export function commandToInfo(command: AnyCommand): CommandInfo {
   /* eslint-disable @typescript-eslint/no-unused-vars -- Omit executable fields from public command metadata. */
@@ -184,10 +236,34 @@ export function commandToInfo(command: AnyCommand): CommandInfo {
     run: _run,
     __isCommand: _brand,
     middlewares: _middlewares,
-    ...info
+    argsSchema: _argsSchema,
+    hooks: _hooks,
+    ...rest
   } = command
   /* eslint-enable @typescript-eslint/no-unused-vars */
-  return info
+  const cooldown =
+    typeof rest.cooldown === 'number'
+      ? { duration: rest.cooldown, scope: 'user' as const }
+      : rest.cooldown
+        ? {
+            duration: rest.cooldown.duration,
+            scope: rest.cooldown.scope ?? 'user',
+          }
+        : undefined
+  const concurrency =
+    typeof rest.concurrency === 'number'
+      ? { limit: rest.concurrency, scope: 'user' as const }
+      : rest.concurrency
+        ? {
+            limit: rest.concurrency.limit,
+            scope: rest.concurrency.scope ?? 'user',
+          }
+        : undefined
+  return {
+    ...rest,
+    cooldown,
+    concurrency,
+  } as CommandInfo
 }
 
 export function isCommand(value: unknown): value is AnyCommand {

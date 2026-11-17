@@ -49,6 +49,7 @@ export default createCommand({
   category: 'fun',
   usage: USAGE,
   aliases: ['shipname'],
+  cooldown: { duration: 5000, scope: 'user' },
   async run(ctx) {
     const { t, args, author, client } = ctx
 

@@ -230,7 +230,7 @@ export default createCommand({
   category: 'utility',
   usage: USAGE,
   aliases: ['ui', 'uinfo', 'whois'],
-
+  cooldown: { duration: 3000, scope: 'user' },
   async run(ctx) {
     const { t, args, author, client, guildId } = ctx
 

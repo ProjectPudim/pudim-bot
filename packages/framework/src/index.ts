@@ -59,6 +59,25 @@ export type {
   LoadEventsOptions,
 } from './creators'
 export { getCommandsInfo } from './client-commands'
+export {
+  CommandFailureError,
+  isCommandFailureError,
+  type CommandFailure,
+} from './creators/commands/failures'
+export type { ParsedCommandArgs } from './utils/args'
+export { parseCommandArgs } from './utils/args'
+export {
+  getDefaultCooldownAdapter,
+  MemoryCooldownAdapter,
+} from './utils/cooldown'
+export type {
+  CooldownAdapter,
+  CooldownAcquireResult,
+  CooldownScope,
+  CooldownOptions,
+} from './utils/cooldown'
+export { clearConcurrency } from './utils/concurrency'
+export type { ConcurrencyScope, ConcurrencyOptions } from './utils/concurrency'
 export { reloadModules } from './reload'
 export type { ReloadResult } from './reload'
 

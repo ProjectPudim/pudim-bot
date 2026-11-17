@@ -1,6 +1,8 @@
+import { redis } from 'bun'
 import { connectRedis, disconnectRedis } from '@pudim/cache'
 import { connectMongo, disconnectMongo } from '@pudim/database'
 import { bootstrap } from '@pudim/framework'
+import { RedisCooldownAdapter } from '@pudim/framework/cooldown/redis'
 import { http } from '@pudim/shared/http'
 import { logger } from '#bot/utils/logger'
 import { env } from './env'
@@ -60,11 +62,13 @@ try {
       ctx.locale = 'pt-BR'
       ctx.logger = logger
     },
-
     logger,
-
     beforeLoad() {
       http.init()
+    },
+
+    adapters: {
+      cooldown: new RedisCooldownAdapter(redis, { prefix: 'pudim:' }),
     },
   })
 

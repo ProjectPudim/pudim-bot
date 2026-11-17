@@ -18,6 +18,7 @@ import servericon from './commands/utility/servericon'
 import serverinfo from './commands/utility/serverinfo'
 import userbanner from './commands/utility/userbanner'
 import userinfo from './commands/utility/userinfo'
+import cooldown from './common/cooldown'
 import duration from './common/duration'
 import invalid from './common/invalid'
 import notFound from './common/notFound'
@@ -46,5 +47,5 @@ export default {
     reverse,
     ship,
   },
-  common: { and: 'e', permissions, duration, invalid, notFound },
+  common: { and: 'e', cooldown, permissions, duration, invalid, notFound },
 }

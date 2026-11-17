@@ -6,7 +6,7 @@ import {
   type DiscoverFilesOptions,
 } from '../../utils/loader'
 import { logger } from '../../utils/logger'
-import { ensureCreatorsRuntime } from '../runtime'
+import { ensureCreatorsRuntime, type CreatorsRuntime } from '../runtime'
 import type { EventRegistry } from './registry'
 import { isEvent, type AnyEvent } from './types'
 
@@ -18,6 +18,14 @@ export interface LoadEventsOptions extends DiscoverFilesOptions {
 }
 
 const attachments = new WeakMap<Client, Map<AnyEvent, () => void>>()
+const runtimes = new WeakMap<Client, CreatorsRuntime>()
+
+export function setEventRuntime(
+  client: Client,
+  runtime: CreatorsRuntime,
+): void {
+  runtimes.set(client, runtime)
+}
 
 export function attachEvent(client: Client, event: AnyEvent): () => void {
   let bindings = attachments.get(client)
@@ -35,7 +43,9 @@ export function attachEvent(client: Client, event: AnyEvent): () => void {
     try {
       await run(client, ...args)
     } catch (error) {
-      const handler = ensureCreatorsRuntime().config.onEventError
+      const handler =
+        runtimes.get(client)?.config.onEventError ??
+        ensureCreatorsRuntime().config.onEventError
       if (handler) {
         try {
           await handler(event, error)

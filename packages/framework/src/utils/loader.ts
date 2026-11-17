@@ -80,8 +80,11 @@ const isBun = 'bun' in process.versions
 
 /**
  * `pathToFileURL` is required on Windows, where `C:\...` is not a valid import specifier.
- * A `generation` bypasses the module cache: Node needs a new query string, while Bun
- * ignores the query on file URLs and needs the module evicted from its registry.
+ *
+ * A `generation` bypasses the module cache. Node supports cache busting through a query
+ * string. Bun ignores query strings for local file URLs and does not expose an ESM cache
+ * invalidation API, so `delete require.cache` is only a best-effort fallback there; editing
+ * a dependency of an already-loaded module may still require restarting the process.
  */
 export async function importModule(
   filePath: string,

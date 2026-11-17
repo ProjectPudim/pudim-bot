@@ -49,7 +49,7 @@ function createInvocationContext<C extends AnyCommand | undefined>(
       if (!guild) return null
       resolvedMember = await guild.members.resolve(message.author.id)
       return resolvedMember
-    })().catch(() => null))
+    })())
 
   // Required declaration-merged properties are populated by decorateContext before dispatch
   return {
@@ -93,11 +93,11 @@ function createInvocationContext<C extends AnyCommand | undefined>(
 export function createContext<TExtra extends object = EmptyObject>(
   input: CreateContextInput<TExtra>,
 ): CommandContext<TExtra> {
-  return createInvocationContext(input, input.command)
+  return createInvocationContext(input, input.command) as CommandContext<TExtra>
 }
 
 export function createNotFoundContext(
   input: InvocationContextInput,
 ): CommandNotFoundContext {
-  return createInvocationContext(input, undefined)
+  return createInvocationContext(input, undefined) as CommandNotFoundContext
 }

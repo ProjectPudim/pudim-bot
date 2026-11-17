@@ -15,7 +15,7 @@ import {
   type AnyCommand,
   type AnyCommandContext,
 } from './creators/commands/types'
-import { attachEvent } from './creators/events/loader'
+import { attachEvent, setEventRuntime } from './creators/events/loader'
 import type { EventRegistry } from './creators/events/registry'
 import { isEvent, type AnyEvent } from './creators/events/types'
 import {
@@ -23,19 +23,15 @@ import {
   staticPrefixForLogs,
   type CreatorsRuntime,
 } from './creators/runtime'
+import type { Creators } from './creators/setup'
 import { setReloader, type ReloadResult } from './reload'
+import { MemoryCooldownAdapter } from './utils/cooldown'
 import {
   collectModuleValues,
   loadModules,
   type LoadedModule,
 } from './utils/loader'
-import {
-  formatError,
-  logger,
-  setLogger,
-  style,
-  type CoreLogger,
-} from './utils/logger'
+import { logger, setLogger, style, type CoreLogger } from './utils/logger'
 
 export type BootstrapErrorHandler = (
   error: unknown,
@@ -65,6 +61,20 @@ export interface BootstrapOptions extends Omit<ClientOptions, 'logger'> {
   ignoreBots?: boolean
   /** Injects global extensions into `ctx` before middlewares and `run` */
   decorateContext?: (ctx: AnyCommandContext) => void | Promise<void>
+  /** Application-provided bot owner ids */
+  ownerIds?: readonly string[]
+  /** Infrastructure adapters */
+  adapters?: {
+    cooldown?: import('./utils/cooldown').CooldownAdapter
+  }
+  /** Cooldown unavailability policy */
+  cooldownPolicy?: 'block' | 'allow'
+  /** Namespace for cooldown keys */
+  namespace?: string
+  /** Explicit bot identity for cooldown keys */
+  botId?: string
+  /** Optional creators runtime returned by setupCreators() */
+  creators?: Creators | CreatorsRuntime
 }
 
 export type CustomBootstrapOptions<TClient extends Client> = Omit<
@@ -113,49 +123,85 @@ export async function bootstrap(
     )
   }
 
-  setLogger(options.logger)
-  const clientOptions: ClientOptions = {
-    ...options,
-    logger: options.logger && toSdkLogger(options.logger, options.logLevel),
+  const {
+    meta,
+    errorHandler,
+    createClient,
+    beforeLoad,
+    modules,
+    modulePatterns,
+    logger: appLogger,
+    loadLogs,
+    ignoreBots,
+    decorateContext,
+    ownerIds,
+    adapters,
+    cooldownPolicy,
+    namespace,
+    botId,
+    creators,
+    logLevel,
+    ...clientOptions
+  } = options
+
+  if (appLogger) setLogger(appLogger)
+  const resolvedClientOptions: ClientOptions = {
+    ...clientOptions,
+    logLevel,
+    logger: appLogger && toSdkLogger(appLogger, logLevel),
   }
   const client =
-    options.createClient?.(clientOptions) ?? new Client(clientOptions)
+    createClient?.(resolvedClientOptions) ?? new Client(resolvedClientOptions)
 
-  const errorHandler: BootstrapErrorHandler =
-    options.errorHandler ??
-    ((error, c) => {
-      c.logger.error(`[bootstrap] Global error: ${formatError(error)}`)
-    })
-  const runtime = ensureCreatorsRuntime()
+  const runtime: CreatorsRuntime =
+    (creators as CreatorsRuntime | undefined) ?? ensureCreatorsRuntime()
+  if (ownerIds) runtime.config.ownerIds = [...ownerIds]
+  if (appLogger) runtime.config.logger = appLogger
+  setEventRuntime(client, runtime)
+
+  const cooldownAdapter =
+    adapters?.cooldown ??
+    new MemoryCooldownAdapter({ prefix: namespace ?? 'pudim' })
+
   installClientCommands(client, runtime.commands)
-  const handleGlobalError = (error: unknown) => {
-    void Promise.resolve()
-      .then(() => errorHandler(error, client))
-      .catch((handlerError: unknown) => {
-        logger.error('[bootstrap] Global error handler failed', handlerError)
-      })
-  }
-  process.on('uncaughtException', handleGlobalError)
-  process.on('unhandledRejection', handleGlobalError)
-  const patterns = options.modulePatterns
-    ? [...options.modulePatterns]
-    : [...DEFAULT_MODULE_PATTERNS, ...(options.modules ?? [])]
-  const showLogs = options.loadLogs ?? true
+
+  const patterns = modulePatterns
+    ? [...modulePatterns]
+    : [...DEFAULT_MODULE_PATTERNS, ...(modules ?? [])]
+  const showLogs = loadLogs ?? true
   let imports: LoadedModule[] = []
   let registered: RegisteredCounts = { commands: [], events: [], ignored: 0 }
   let detachPipeline: () => void = () => undefined
   let disposed = false
   let reloading = false
   let generation = 0
+
+  const handleGlobalError =
+    errorHandler &&
+    ((error: unknown) => {
+      void Promise.resolve()
+        .then(() => errorHandler(error, client))
+        .catch((handlerError: unknown) => {
+          logger.error('[bootstrap] Global error handler failed', handlerError)
+        })
+    })
+
+  if (handleGlobalError) {
+    process.on('uncaughtException', handleGlobalError)
+    process.on('unhandledRejection', handleGlobalError)
+  }
+
   const dispose = () => {
     if (disposed) return
     disposed = true
     setReloader(client, undefined)
     detachPipeline()
     deactivate(registered, runtime)
-    setLogger(undefined)
-    process.off('uncaughtException', handleGlobalError)
-    process.off('unhandledRejection', handleGlobalError)
+    if (appLogger) setLogger(undefined)
+    if (handleGlobalError) {
+      process.off('uncaughtException', handleGlobalError)
+      process.off('unhandledRejection', handleGlobalError)
+    }
   }
 
   const reload = async (): Promise<ReloadResult> => {
@@ -163,8 +209,7 @@ export async function bootstrap(
     if (reloading) throw new Error('[reload] A reload is already in progress.')
     reloading = true
     try {
-      // Import first: a broken file must not touch the running commands
-      const fresh = await loadModules(options.meta, patterns, ++generation)
+      const fresh = await loadModules(meta, patterns, ++generation)
       const next = collectExports(fresh)
       const previous = registered
       deactivate(previous, runtime)
@@ -192,15 +237,23 @@ export async function bootstrap(
   }
 
   try {
-    if (options.beforeLoad) await options.beforeLoad(client)
+    if (beforeLoad) await beforeLoad(client)
 
-    imports = await loadModules(options.meta, patterns)
+    imports = await loadModules(meta, patterns)
 
     const collected = collectExports(imports)
     activate(collected, runtime, client)
     registered = collected
 
-    detachPipeline = attachCommandPipeline(client, runtime, options)
+    detachPipeline = attachCommandPipeline(client, runtime, {
+      ignoreBots,
+      decorateContext,
+      showLogs,
+      ownerIds: ownerIds ?? runtime.config.ownerIds,
+      cooldownAdapter,
+      cooldownPolicy,
+      botId,
+    })
 
     if (showLogs) {
       printLoadLogs(runtime, registered)
@@ -273,7 +326,6 @@ function collectExports(imports: LoadedModule[]): RegisteredCounts {
   return registered
 }
 
-/** All or nothing: a failure leaves neither registry entries nor listeners behind */
 function activate(
   registered: RegisteredCounts,
   runtime: CreatorsRuntime,
@@ -308,16 +360,26 @@ function deactivate(
 
 const commandPipelines = new WeakMap<Client, () => void>()
 
+interface AttachPipelineOptions {
+  ignoreBots?: boolean
+  decorateContext?: (ctx: AnyCommandContext) => void | Promise<void>
+  showLogs?: boolean
+  ownerIds?: readonly string[]
+  cooldownAdapter?: import('./utils/cooldown').CooldownAdapter
+  cooldownPolicy?: 'block' | 'allow'
+  botId?: string
+}
+
 function attachCommandPipeline(
   client: Client,
   runtime: CreatorsRuntime,
-  options: BootstrapOptions,
+  options: AttachPipelineOptions,
 ): () => void {
   commandPipelines.get(client)?.()
   if (
     !runtime.config.prefix &&
     runtime.commands.size > 0 &&
-    (options.loadLogs ?? true)
+    (options.showLogs ?? true)
   ) {
     logger.warn(
       `${runtime.commands.size} command(s) registered, but NO prefix was defined — ` +
@@ -340,6 +402,12 @@ function attachCommandPipeline(
       onMiddlewareStop: runtime.config.onMiddlewareStop,
       notFound: runtime.config.notFound,
       onNotFoundError: runtime.config.onNotFoundError,
+      ownerIds: options.ownerIds ?? runtime.config.ownerIds,
+      hooks: runtime.config.hooks,
+      logger: runtime.config.logger,
+      cooldownAdapter: options.cooldownAdapter,
+      cooldownPolicy: options.cooldownPolicy,
+      botIdentity: options.botId ?? client.user?.id,
     }).catch((error: unknown) => {
       logger.error('[bootstrap] Command pipeline failed', error)
     })
@@ -393,7 +461,7 @@ function printLoadLogs(
     for (const event of registered.events) {
       logger.line(
         [
-          style('✦ Event', 'yellow'),
+          style('★ Event', 'yellow'),
           style('>', 'gray'),
           style(event.name, 'yellow', 'underline'),
           style('✓', 'green'),

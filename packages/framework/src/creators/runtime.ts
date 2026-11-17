@@ -1,7 +1,9 @@
+import type { CoreLogger } from '../utils/logger'
 import type { Middlewares } from './commands/middleware'
 import { CommandRegistry } from './commands/registry'
 import type {
   CommandErrorHandler,
+  CommandHooks,
   CommandNotFoundErrorHandler,
   CommandNotFoundHandler,
   MiddlewareStopHandler,
@@ -18,6 +20,9 @@ export interface ResolvedCreatorsConfig {
   notFound?: CommandNotFoundHandler
   onNotFoundError?: CommandNotFoundErrorHandler
   onEventError?: EventErrorHandler
+  ownerIds?: readonly string[]
+  hooks?: CommandHooks
+  logger?: CoreLogger
 }
 
 export interface CreatorsRuntime {
@@ -26,16 +31,15 @@ export interface CreatorsRuntime {
   events: EventRegistry
 }
 
-let runtime: CreatorsRuntime | undefined
+let defaultRuntime: CreatorsRuntime | undefined
 
-/** Internal. The public entry point is `setupCreators` */
 export function ensureCreatorsRuntime(): CreatorsRuntime {
-  runtime ??= {
+  defaultRuntime ??= {
     config: {},
     commands: new CommandRegistry(),
     events: new EventRegistry(),
   }
-  return runtime
+  return defaultRuntime
 }
 
 export function staticPrefixForLogs(
