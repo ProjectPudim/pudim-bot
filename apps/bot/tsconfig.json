@@ -3,7 +3,8 @@
   "compilerOptions": {
     "types": ["bun"],
     "paths": {
-      "#bot/*": ["./src/*"]
+      "#bot/*": ["./src/*"],
+      "#bot-root/*": ["./*"]
     }
   },
   "include": ["src/**/*"],

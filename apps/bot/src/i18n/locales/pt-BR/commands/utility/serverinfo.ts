@@ -1,0 +1,72 @@
+export default {
+  messages: {},
+  title: 'Informações do Servidor',
+  statsTitle: 'Estatísticas do Servidor',
+  topics: {
+    server: 'Servidor',
+    security: 'Segurança',
+    settings: 'Configurações',
+    resources: 'Recursos',
+  },
+  labels: {
+    name: 'Nome',
+    id: 'ID',
+    owner: 'Proprietário',
+    created: 'Criado em',
+    members: 'Membros',
+    online: 'Online',
+    channels: 'Canais',
+    others: 'Outros',
+    roles: 'Cargos',
+    emojis: 'Emojis',
+    stickers: 'Stickers',
+    verification: 'Nível de verificação',
+    mfa: 'MFA',
+    nsfw: 'Nível NSFW',
+    explicitFilter: 'Filtro de conteúdo',
+    notifications: 'Notificações padrão',
+    features: 'Recursos',
+    none: 'Nenhum',
+  },
+  verification: {
+    none: 'Nenhum',
+    low: 'Baixo',
+    medium: 'Médio',
+    high: 'Alto',
+    veryHigh: 'Muito alto',
+  },
+  mfa: {
+    none: 'Nenhum',
+    elevated: 'Elevado',
+  },
+  explicitFilter: {
+    disabled: 'Desativado',
+    membersWithoutRoles: 'Membros sem cargo',
+    allMembers: 'Todos os membros',
+  },
+  notifications: {
+    allMessages: 'Todas as mensagens',
+    onlyMentions: 'Apenas menções',
+  },
+  nsfw: {
+    safe: 'Seguro',
+    ageRestricted: 'Restrito por idade',
+  },
+  channelTypes: {
+    text: 'Texto',
+    voice: 'Voz',
+    category: 'Categoria',
+    announcement: 'Anúncio',
+    forum: 'Fórum',
+    media: 'Mídia',
+    link: 'Link',
+    thread: 'Thread',
+    other: 'Outro',
+  },
+  unavailable: 'Indisponível',
+  author: (server: string) => `Informações de ${server}`,
+  membersSummary: (total: number, online?: number) =>
+    online !== undefined
+      ? `- **Membros:** ${total.toLocaleString('pt-BR')} membros, ${online.toLocaleString('pt-BR')} online.`
+      : `- **Membros:** ${total.toLocaleString('pt-BR')} membros.`,
+}

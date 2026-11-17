@@ -1,21 +1,15 @@
 import { z } from 'zod'
+import { validateEnv } from '@pudim/framework'
 
-const schema = z.object({
-  NODE_ENV: z.enum(['development', 'production']).default('development'),
-  BOT_TOKEN: z.string().min(1),
-  MONGODB_URI: z.string().min(1),
-  VALKEY_URL: z.string().min(1),
-})
+export const env = await validateEnv(
+  z.object({
+    NODE_ENV: z.enum(['development', 'production']).default('development'),
 
-const result = schema.safeParse(process.env)
+    BOT_TOKEN: z.string('The token of the bot is required').min(1),
+    MONGODB_URI: z.string('The MongoDB URI is required').min(1),
+    VALKEY_URL: z.string('The Valkey URl is required').min(1),
 
-if (!result.success) {
-  console.error(
-    result.error.issues
-      .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-      .join('\n'),
-  )
-  process.exit(1)
-}
-
-export const env = result.data
+    FELIPW_API_URL: z.string().optional(),
+    ROLEPLAY_API_URL: z.string().optional(),
+  }),
+)

@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./logger": "./src/logger/index.ts"
+    "./logger": "./src/logger/index.ts",
+    "./types": "./src/types/index.ts",
+    "./http": "./src/http/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -12,5 +14,8 @@
   },
   "devDependencies": {
     "@pudim/config": "workspace:*"
+  },
+  "dependencies": {
+    "@fluxerjs/core": "^3.3.0"
   }
 }
