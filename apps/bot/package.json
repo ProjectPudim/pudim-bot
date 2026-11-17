@@ -11,11 +11,8 @@
   },
   "dependencies": {
     "@fluxerjs/core": "^3.3.0",
-    "@fluxerjs/util": "^3.1.0",
-    "@napi-rs/canvas": "^1.1.1",
     "@pudim/cache": "workspace:*",
     "@pudim/database": "workspace:*",
-    "@pudim/framework": "workspace:*",
     "@pudim/i18n": "workspace:*",
     "@pudim/shared": "workspace:*",
     "zod": "^4.6.7"
