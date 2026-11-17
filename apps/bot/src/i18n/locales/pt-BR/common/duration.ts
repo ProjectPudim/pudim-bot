@@ -1,4 +1,5 @@
 export default {
+  messages: {},
   seconds: (value: number) =>
     `${value} ${value === 1 ? 'segundo' : 'segundos'}`,
   minutes: (value: number) => `${value} ${value === 1 ? 'minuto' : 'minutos'}`,

@@ -239,7 +239,7 @@ export default createCommand({
 
     if (!targetId) {
       await ctx.reply({
-        content: t('common.invalid.user'),
+        content: t('common.invalid.messages.user'),
       })
       return
     }
@@ -263,7 +263,7 @@ export default createCommand({
 
     if (!apiUser && !user) {
       await ctx.reply({
-        content: t('common.notFound.user', raw ?? targetId),
+        content: t('common.notFound.messages.user', raw ?? targetId),
       })
       return
     }

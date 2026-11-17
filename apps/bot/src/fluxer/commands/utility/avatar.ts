@@ -20,7 +20,7 @@ export default createCommand({
     const targetId = raw ? parseTargetId(raw) : author.id
     if (!targetId) {
       await ctx.reply({
-        content: t('common.invalid.user'),
+        content: t('common.invalid.messages.user'),
       })
       return
     }
@@ -31,7 +31,7 @@ export default createCommand({
 
     if (!user) {
       await ctx.reply({
-        content: t('common.notFound.user', raw ?? targetId),
+        content: t('common.notFound.messages.user', raw ?? targetId),
       })
       return
     }

@@ -1,6 +1,7 @@
 import { config } from '#bot/utils/config'
 
 export default {
+  messages: {},
   commandWord: (amount: number) => (amount === 1 ? 'comando' : 'comandos'),
   home: {
     title: 'Ajuda do Pudim',

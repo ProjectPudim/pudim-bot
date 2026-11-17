@@ -1,6 +1,7 @@
 import type { PermissionString } from '@fluxerjs/core'
 
 export default {
+  messages: {},
   AddReactions: 'Adicionar reações',
   Administrator: 'Administrador',
   AttachFiles: 'Anexar arquivos',
@@ -38,4 +39,4 @@ export default {
   ViewAuditLog: 'Ver log de auditoria',
   ViewChannel: 'Ver canal',
   ViewChannelMembers: 'Ver membros do canal',
-} satisfies Record<PermissionString, string>
+} satisfies { messages: object } & Record<PermissionString, string>

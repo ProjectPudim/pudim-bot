@@ -3,7 +3,7 @@ import { config } from './config'
 
 export const Category = {
   Utilities: 'utility',
-  // Moderation: 'moderation',
+  Moderation: 'moderation',
   Fun: 'fun',
   // Settings: 'settings',
 } as const
@@ -36,16 +36,16 @@ export const categories = {
     },
   },
 
-  // [Category.Moderation]: {
-  //   labels: {
-  //     'en-US': 'Moderation',
-  //     'pt-BR': 'Moderação',
-  //   },
-  //   descriptions: {
-  //     'en-US': 'Commands to keep your server clean and safe.',
-  //     'pt-BR': 'Comandos para manter o seu servidor limpo e seguro.',
-  //   },
-  // },
+  [Category.Moderation]: {
+    labels: {
+      'en-US': 'Moderation',
+      'pt-BR': 'Moderação',
+    },
+    descriptions: {
+      'en-US': 'Commands to keep your server clean and safe.',
+      'pt-BR': 'Comandos para manter o seu servidor limpo e seguro.',
+    },
+  },
 
   [Category.Fun]: {
     labels: {

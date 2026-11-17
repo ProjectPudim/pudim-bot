@@ -63,7 +63,7 @@ export class RoleplayManager {
 
     if (!targetId) {
       await ctx.reply({
-        content: t('commands.roleplay.invalidUsage'),
+        content: t('commands.roleplay.messages.invalidUsage'),
       })
 
       return

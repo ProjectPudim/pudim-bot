@@ -2,10 +2,15 @@ import { config } from '#bot/utils/config'
 import { emojis } from '#bot/utils/constants'
 
 export default {
+  messages: {
+    invalidUsage: `${emojis.error} ${config.separator} Para utilizar esse comando, você precisa **informar um convite** ou o **código do convite** para que eu possa pegar suas informações.`,
+  },
   title: 'Informações do Convite',
-  invalidUsage: `${emojis.error} ${config.separator} Para utilizar esse comando, você precisa **informar um convite** ou o **código do convite** para que eu possa pegar suas informações.`,
+
   expired: 'Expirado',
+
   neverExpires: 'Não expira',
+
   labels: {
     code: 'Código',
     link: 'Link',
@@ -22,5 +27,6 @@ export default {
     unlimited: 'Ilimitado',
     unavailable: 'Indisponível',
   },
+
   openInBrowser: (url: string) => `[Abrir no navegador](${url})`,
 }

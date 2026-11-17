@@ -22,7 +22,7 @@ export default createCommand({
     let targetId = parseTargetId(args[0])
     if (args[0] && !targetId) {
       await ctx.reply({
-        content: t('common.invalid.user'),
+        content: t('common.invalid.messages.user'),
       })
       return
     }
@@ -55,14 +55,17 @@ export default createCommand({
 
     if (!user && !apiProfile) {
       await ctx.reply({
-        content: t('common.notFound.user', args[0]?.trim() || targetId),
+        content: t(
+          'common.notFound.messages.user',
+          args[0]?.trim() || targetId,
+        ),
       })
       return
     }
 
     if (!bannerUrl) {
       await ctx.reply({
-        content: t('commands.userbanner.noBanner', targetId),
+        content: t('commands.userbanner.messages.noBanner', targetId),
       })
       return
     }

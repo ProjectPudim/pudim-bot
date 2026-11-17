@@ -55,7 +55,7 @@ export default createCommand({
     const firstId = parseTargetId(args[0])
     if (!firstId) {
       await ctx.reply({
-        content: t('commands.ship.invalidUsage', ctx.prefix),
+        content: t('commands.ship.messages.invalidUsage', ctx.prefix),
       })
       return
     }
@@ -66,7 +66,7 @@ export default createCommand({
       const parsedSecond = parseTargetId(secondRaw)
       if (!parsedSecond) {
         await ctx.reply({
-          content: t('common.invalid.user'),
+          content: t('common.invalid.messages.user'),
         })
         return
       }
@@ -80,7 +80,7 @@ export default createCommand({
 
     if (!user1) {
       await ctx.reply({
-        content: t('common.notFound.user', args[0]?.trim() || firstId),
+        content: t('common.notFound.messages.user', args[0]?.trim() || firstId),
       })
       return
     }
@@ -94,7 +94,7 @@ export default createCommand({
 
     if (!user2) {
       await ctx.reply({
-        content: t('common.notFound.user', secondRaw || secondId),
+        content: t('common.notFound.messages.user', secondRaw || secondId),
       })
       return
     }
@@ -108,7 +108,7 @@ export default createCommand({
     const shipName = getShipName(user1.username, user2.username)
     const translate = t as (key: string, ...args: unknown[]) => string
     const selectedMessage = translate(
-      `commands.ship.messages.${messageKey(percentage, sameUser)}`,
+      `commands.ship.results.${messageKey(percentage, sameUser)}`,
     )
 
     const buffer = await generateShipImage(

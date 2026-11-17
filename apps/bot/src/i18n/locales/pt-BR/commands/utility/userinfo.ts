@@ -1,4 +1,5 @@
 export default {
+  messages: {},
   userTitle: 'Informações do Usuário',
   memberTitle: 'Informações do Membro',
   labels: {

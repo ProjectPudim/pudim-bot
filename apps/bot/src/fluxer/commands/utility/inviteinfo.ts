@@ -81,7 +81,7 @@ export default createCommand({
 
     if (!input) {
       await ctx.reply({
-        content: t('commands.inviteinfo.invalidUsage'),
+        content: t('commands.inviteinfo.messages.invalidUsage'),
       })
       return
     }
@@ -90,7 +90,7 @@ export default createCommand({
 
     if (!code) {
       await ctx.reply({
-        content: t('common.invalid.invite'),
+        content: t('common.invalid.messages.invite'),
       })
       return
     }
@@ -110,7 +110,7 @@ export default createCommand({
       }
 
       await ctx.reply({
-        content: t('common.notFound.invite', code),
+        content: t('common.notFound.messages.invite', code),
       })
       return
     }

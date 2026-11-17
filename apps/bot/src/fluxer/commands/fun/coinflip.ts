@@ -31,7 +31,7 @@ export default createCommand({
 
     if (args?.[0] && !choice) {
       await ctx.reply({
-        content: t('commands.coinflip.invalidUsage'),
+        content: t('commands.coinflip.messages.invalidUsage'),
       })
       return
     }

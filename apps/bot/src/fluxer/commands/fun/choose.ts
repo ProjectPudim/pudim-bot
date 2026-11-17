@@ -23,7 +23,7 @@ export default createCommand({
     const input = args.join(' ').trim()
     if (!input) {
       await ctx.reply({
-        content: t('commands.choose.invalidOptions', ctx.prefix),
+        content: t('commands.choose.messages.invalidOptions', ctx.prefix),
       })
       return
     }
@@ -35,21 +35,21 @@ export default createCommand({
 
     if (options.length < 2) {
       await ctx.reply({
-        content: t('commands.choose.invalidOptions', ctx.prefix),
+        content: t('commands.choose.messages.invalidOptions', ctx.prefix),
       })
       return
     }
 
     if (options.length > MAX_OPTIONS) {
       await ctx.reply({
-        content: t('commands.choose.tooManyOptions', MAX_OPTIONS),
+        content: t('commands.choose.messages.tooManyOptions', MAX_OPTIONS),
       })
       return
     }
 
     if (options.some((option) => option.length > MAX_OPTION_LENGTH)) {
       await ctx.reply({
-        content: t('commands.choose.tooLong', MAX_OPTION_LENGTH),
+        content: t('commands.choose.messages.tooLong', MAX_OPTION_LENGTH),
       })
       return
     }

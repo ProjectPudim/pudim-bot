@@ -22,7 +22,7 @@ export default createCommand({
     const match = /^(\d+)d(\d+)$/.exec(input)
     if (!match) {
       await ctx.reply({
-        content: t('commands.dice.invalidFormat'),
+        content: t('commands.dice.messages.invalidFormat'),
       })
       return
     }
@@ -39,7 +39,7 @@ export default createCommand({
       sides > 1000
     ) {
       await ctx.reply({
-        content: t('commands.dice.limits'),
+        content: t('commands.dice.messages.limits'),
       })
       return
     }

@@ -1,6 +1,7 @@
 import type { Client } from '@fluxerjs/core'
 
 export default {
+  messages: {},
   title: 'Informações do Pudim',
   description: (client: Client, users: number, guilds: number) =>
     [

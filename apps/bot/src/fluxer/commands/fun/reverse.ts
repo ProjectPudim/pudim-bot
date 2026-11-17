@@ -18,7 +18,7 @@ export default createCommand({
     const text = args.join(' ').trim()
     if (!text) {
       await ctx.reply({
-        content: t('commands.reverse.missingText'),
+        content: t('commands.reverse.messages.missingText'),
       })
       return
     }
@@ -34,7 +34,7 @@ export default createCommand({
 
     if (content.length > 2000) {
       await ctx.reply({
-        content: t('commands.reverse.tooLong'),
+        content: t('commands.reverse.messages.tooLong'),
       })
       return
     }

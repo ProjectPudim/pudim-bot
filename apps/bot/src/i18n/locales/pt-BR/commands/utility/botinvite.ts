@@ -1,6 +1,7 @@
 import { config } from '#bot/utils/config'
 
 export default {
+  messages: {},
   author: { name: 'Convide o Pudim para seu servidor' },
   description: [
     `Para adicionar o **Pudim** no seu servidor, basta [clicar aqui](${config.links.botInvite}).`,

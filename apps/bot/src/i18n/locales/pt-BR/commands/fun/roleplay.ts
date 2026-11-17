@@ -2,7 +2,9 @@ import { config } from '#bot/utils/config'
 import { emojis } from '#bot/utils/constants'
 
 export default {
-  invalidUsage: `${emojis.error} ${config.separator} Para utilizar esse comando, você precisa **informar um usuário** ou o **ID do usuário** para que você possa realizar a ação nele.`,
+  messages: {
+    invalidUsage: `${emojis.error} ${config.separator} Para utilizar esse comando, você precisa **informar um usuário** ou o **ID do usuário** para que você possa realizar a ação nele.`,
+  },
   bonk: {
     title: [
       'Bonk! 🔨',
@@ -17,6 +19,7 @@ export default {
       `${author} deu uma marretadinha em ${target}. Foi de brincadeira!`,
     ],
   },
+
   feed: {
     title: ['Nham nham! 🍰', 'Hora da comidinha~ 🍎', 'Olha o aviãozinho~ ✈️'],
     description: (author: string, target: string) => [
@@ -25,6 +28,7 @@ export default {
       `${author} fez "olha o aviãozinho~" e alimentou ${target}.`,
     ],
   },
+
   hug: {
     title: [
       'Abraço aconchegante 🧸',
@@ -37,6 +41,7 @@ export default {
       `${author} envolveu ${target} num abraço fofinho.`,
     ],
   },
+
   kiss: {
     title: ['Beijinho 💕', 'Beijo carinhoso 💋', 'Mwah~ ✨'],
     description: (author: string, target: string) => [
@@ -45,6 +50,7 @@ export default {
       `${author} deu um beijinho na bochecha de ${target}.`,
     ],
   },
+
   pat: {
     title: ['Cafuné gostoso 🐱', 'Carinho na cabeça ✨', 'Pat pat~ 💕'],
     description: (author: string, target: string) => [
@@ -53,6 +59,7 @@ export default {
       `${author} deu uns headpats carinhosos em ${target}.`,
     ],
   },
+
   poke: {
     title: ['Cutucadinha 👈', 'Toc toc~ ✨', 'Ei, você! 👉'],
     description: (author: string, target: string) => [
@@ -61,6 +68,7 @@ export default {
       `${author} cutucou ${target} bem devagarinho. O que será que quer?`,
     ],
   },
+
   punch: {
     title: ['Soquinho amigável 🥊', 'Soquinho de brincadeira 💥'],
     description: (author: string, target: string) => [
@@ -68,6 +76,7 @@ export default {
       `${author} deu um soquinho de leve em ${target}. Foi só brincadeira!`,
     ],
   },
+
   slap: {
     title: ['Tapinha brincalhão 👋', 'Plaft! Acorda~ ⚡'],
     description: (author: string, target: string) => [
@@ -75,6 +84,7 @@ export default {
       `${author} deu um tapinha brincalhão em ${target} para acordar pra vida.`,
     ],
   },
+
   wave: {
     title: ['Oiê! 👋', 'Tchauzinho~ ✨'],
     description: (author: string, target: string) => [
@@ -82,6 +92,7 @@ export default {
       `${author} mandou um oi animado para ${target}.`,
     ],
   },
+
   yeet: {
     title: ['Yeet! 🚀', 'Lá vai~ 🌪️', 'Voou longe! 🎈'],
     description: (author: string, target: string) => [

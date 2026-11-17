@@ -22,14 +22,14 @@ export default createCommand({
     const question = args.join(' ').trim()
     if (!question) {
       await ctx.reply({
-        content: t('commands.8ball.missingQuestion'),
+        content: t('commands.8ball.messages.missingQuestion'),
       })
       return
     }
 
     if (question.length > MAX_QUESTION_LENGTH) {
       await ctx.reply({
-        content: t('commands.8ball.tooLong', MAX_QUESTION_LENGTH),
+        content: t('commands.8ball.messages.tooLong', MAX_QUESTION_LENGTH),
       })
       return
     }

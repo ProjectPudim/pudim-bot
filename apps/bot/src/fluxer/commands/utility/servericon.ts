@@ -24,7 +24,7 @@ export default createCommand({
     const guild = await client.guilds.fetch(targetGuildId).catch(() => null)
     if (!guild) {
       await ctx.reply({
-        content: t('common.notFound.server', targetGuildId),
+        content: t('common.notFound.messages.server', targetGuildId),
       })
       return
     }
@@ -38,7 +38,7 @@ export default createCommand({
 
     if (!iconUrl) {
       await ctx.reply({
-        content: t('commands.servericon.noIcon', guild.id),
+        content: t('commands.servericon.messages.noIcon', guild.id),
       })
       return
     }

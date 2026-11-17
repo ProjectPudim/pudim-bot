@@ -28,7 +28,7 @@ export default createCommand({
       targetId = parseChannelId(raw)
       if (!targetId) {
         await ctx.reply({
-          content: t('common.invalid.channel'),
+          content: t('common.invalid.messages.channel'),
         })
         return
       }
@@ -40,7 +40,7 @@ export default createCommand({
 
     if (!channel) {
       await ctx.reply({
-        content: t('common.notFound.channel', raw ?? targetId),
+        content: t('common.notFound.messages.channel', raw ?? targetId),
       })
       return
     }
@@ -53,7 +53,7 @@ export default createCommand({
       channel.guildId !== guildId
     ) {
       await ctx.reply({
-        content: t('common.notFound.channel', raw ?? targetId),
+        content: t('common.notFound.messages.channel', raw ?? targetId),
       })
       return
     }

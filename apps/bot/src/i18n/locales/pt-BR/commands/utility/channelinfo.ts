@@ -2,8 +2,11 @@ import { config } from '#bot/utils/config'
 import { emojis } from '#bot/utils/constants'
 
 export default {
+  messages: {
+    noAccess: `${emojis.error} ${config.separator} Me desculpe! Eu não consigo acessar o canal que você informou, por favor, informe um canal que eu tenha acesso.`,
+  },
   title: 'Informações do Canal',
-  noAccess: `${emojis.error} ${config.separator} Me desculpe! Eu não consigo acessar o canal que você informou, por favor, informe um canal que eu tenha acesso.`,
+
   labels: {
     name: 'Nome',
     id: 'ID',
@@ -20,6 +23,7 @@ export default {
     noCategory: 'Sem categoria',
     noTopic: 'Sem tópico',
   },
+
   types: {
     text: 'Canal de texto',
     voice: 'Canal de voz',
@@ -36,6 +40,7 @@ export default {
     personalNotes: 'Notas pessoais',
     unknown: 'Desconhecido',
   },
+
   values: {
     yes: 'Sim',
     no: 'Não',

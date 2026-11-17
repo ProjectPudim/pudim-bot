@@ -1,4 +1,5 @@
 export default {
+  messages: {},
   title: 'Informações do Servidor',
   statsTitle: 'Estatísticas do Servidor',
   topics: {
