@@ -3,7 +3,7 @@
   "compilerOptions": {
     "types": ["bun"],
     "paths": {
-      "#shared/*": ["./src/*"]
+      "#cache/*": ["./src/*"]
     }
   },
   "include": ["src/**/*"],
