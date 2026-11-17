@@ -8,8 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:bot": "bun run --filter @pudim/bot dev",
-    "start:bot": "bun run --filter @pudim/bot start",
+    "dev:bot": "bun --env-file=./apps/bot/.env --watch ./apps/bot/src/index.ts",
     "lint": "eslint .",
     "typecheck": "bun run --filter '*' typecheck",
     "format": "prettier --write .",
