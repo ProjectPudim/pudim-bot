@@ -5,6 +5,7 @@ import dice from './commands/fun/dice'
 import reverse from './commands/fun/reverse'
 import roleplay from './commands/fun/roleplay'
 import ship from './commands/fun/ship'
+import autorole from './commands/settings/autorole'
 import avatar from './commands/utility/avatar'
 import botinfo from './commands/utility/botinfo'
 import botinvite from './commands/utility/botinvite'
@@ -37,6 +38,7 @@ export default {
     emojiinfo,
     inviteinfo,
     roleinfo,
+    autorole,
     serverbanner,
     servericon,
     serverinfo,

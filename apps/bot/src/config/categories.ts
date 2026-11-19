@@ -5,6 +5,7 @@ export const Category = {
   Utilities: 'utility',
   Moderation: 'moderation',
   Fun: 'fun',
+  Settings: 'settings',
 } as const
 
 export type Category = (typeof Category)[keyof typeof Category]
@@ -52,6 +53,16 @@ export const categories = {
     descriptions: {
       'en-US': 'Fun commands and games.',
       'pt-BR': 'Comandos e jogos divertidos.',
+    },
+  },
+  [Category.Settings]: {
+    labels: {
+      'en-US': 'Settings',
+      'pt-BR': 'Configuração',
+    },
+    descriptions: {
+      'en-US': 'Setting up systems in your community.',
+      'pt-BR': 'Configure sistemas em sua comunidade.',
     },
   },
 } satisfies Record<Category, CategoryMetadata>

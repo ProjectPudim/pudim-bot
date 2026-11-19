@@ -36,6 +36,7 @@ export const emojis = {
   pudim: '<:pudim:1564082529927966720>',
   database: '<:pudimdb:1568790780246503426>',
   sparkles: '<:pudimsparkles:1568790780246503427>',
+  point: '<:point:1572767817269260290>',
   giveaway: '🎉',
 } as const
 
