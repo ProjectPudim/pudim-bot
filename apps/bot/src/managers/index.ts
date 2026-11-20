@@ -12,3 +12,5 @@ export {
   type ReactionPayload,
   type ReactionProcess,
 } from './reaction'
+export { ReactionRoleManager, reactionRoleManager } from './reactionroles'
+export { AutoReactionManager, autoReactionManager } from './autoreaction'

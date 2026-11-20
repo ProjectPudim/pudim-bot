@@ -2,7 +2,7 @@ import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
-    noAccess: `${emojis.error} ${config.separator} Me desculpe! Eu não consigo acessar o canal que você informou, por favor, informe um canal que eu tenha acesso.`,
+    noAccess: `${config.separator(emojis.error)} Me desculpe! Eu não consigo acessar o canal que você informou, por favor, informe um canal que eu tenha acesso.`,
   },
   title: 'Informações do Canal',
 

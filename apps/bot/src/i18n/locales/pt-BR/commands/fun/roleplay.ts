@@ -2,7 +2,7 @@ import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
-    invalidUsage: `${emojis.error} ${config.separator} Para utilizar esse comando, você precisa **informar um usuário** ou o **ID do usuário** para que você possa realizar a ação nele.`,
+    invalidUsage: `${config.separator(emojis.error)} Para utilizar esse comando, você precisa **informar um usuário** ou o **ID do usuário** para que você possa realizar a ação nele.`,
   },
   bonk: {
     title: [

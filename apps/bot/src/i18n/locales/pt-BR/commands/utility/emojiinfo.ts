@@ -2,8 +2,8 @@ import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
-    invalidUsage: `${emojis.error} ${config.separator} Para utilizar esse comando, você precisa **informar um emoji** ou o **ID do emoji** para que eu possa pegar suas informações.`,
-    unicodeNotSupported: `${emojis.error} ${config.separator} Me desculpe! Eu não consigo pegar informações sobre esse emoji, pois ele utiliza um emoji Unicode, sobre o qual ainda não consigo consultar detalhes.`,
+    invalidUsage: `${config.separator(emojis.error)} Para utilizar esse comando, você precisa **informar um emoji** ou o **ID do emoji** para que eu possa pegar suas informações.`,
+    unicodeNotSupported: `${config.separator(emojis.error)} Me desculpe! Eu não consigo pegar informações sobre esse emoji, pois ele utiliza um emoji Unicode, sobre o qual ainda não consigo consultar detalhes.`,
   },
   title: 'Informações do Emoji',
 

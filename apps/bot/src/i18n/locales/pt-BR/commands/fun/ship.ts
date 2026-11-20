@@ -3,7 +3,7 @@ import { config, emojis } from '#bot/config'
 export default {
   messages: {
     invalidUsage: (p: string) =>
-      `${emojis.error} ${config.separator} Para utilizar esse comando, você precisa informar ao menos **uma pessoa** para que o **Oráculo do Destino** possa te dar uma resposta.\n-# Por exemplo: \`${p}ship @Pudim @Felipe\``,
+      `${config.separator(emojis.error)} Para utilizar esse comando, você precisa informar ao menos **uma pessoa** para que o **Oráculo do Destino** possa te dar uma resposta.\n-# Por exemplo: \`${p}ship @Pudim @Felipe\``,
   },
   title:
     '✨ O Oráculo do Destino diz...\n> Sim, **ele não erra**, se errar, foi obra do *Pudim do Destino* que fez algo hein!',

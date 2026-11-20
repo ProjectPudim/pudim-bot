@@ -7,7 +7,15 @@ export {
   getUserAvatarUrl,
   getUserBannerUrl,
 } from './cdn'
+export { findMessageChannel } from './channels'
+export {
+  buildTable,
+  createTable,
+  type BuildTableOptions,
+  type TableColumn,
+} from './table'
 export * from './embed'
+export { checkRoleAssignable, toggleRole } from './roles'
 export {
   emojiIdentity,
   emojiRoute,
@@ -29,6 +37,7 @@ export {
   extractInviteCode,
   fetchMember,
   parseChannelId,
+  parseMessageReference,
   parseRoleId,
   parseTargetId,
   parseUserId,

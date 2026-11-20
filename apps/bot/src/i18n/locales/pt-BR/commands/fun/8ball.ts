@@ -2,9 +2,9 @@ import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
-    missingQuestion: `${emojis.error} ${config.separator} Você precisa informar uma **pergunta** para que eu possa responder.`,
+    missingQuestion: `${config.separator(emojis.error)} Você precisa informar uma **pergunta** para que eu possa responder.`,
     tooLong: (max: number) =>
-      `${emojis.error} ${config.separator} Sua pergunta deve ter no máximo **${max} caracteres**.`,
+      `${config.separator(emojis.error)} Sua pergunta deve ter no máximo **${max} caracteres**.`,
   },
   title: 'Magic 8-Ball',
   question: 'Pergunta',

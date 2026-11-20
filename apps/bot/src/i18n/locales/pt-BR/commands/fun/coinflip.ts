@@ -2,7 +2,7 @@ import { config, emojis } from '#bot/config'
 
 export default {
   messages: {
-    invalidUsage: `${emojis.error} ${config.separator} Para utilizar esse comando, você precisa **informar um lado da moeda**, como \`cara\` ou \`coroa\`, para que eu possa lançar a moeda.`,
+    invalidUsage: `${config.separator(emojis.error)} Para utilizar esse comando, você precisa **informar um lado da moeda**, como \`cara\` ou \`coroa\`, para que eu possa lançar a moeda.`,
   },
   flipping: '🪙 Lançando a moeda...',
   title: 'Resultado',

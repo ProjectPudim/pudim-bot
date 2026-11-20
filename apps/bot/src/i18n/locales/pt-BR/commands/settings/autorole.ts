@@ -21,14 +21,14 @@ export default {
     },
 
     errors: {
-      invalidCategory: `${emojis.error} ${config.separator} A categoria informada é **inválida**. Use \`all\`, \`users\` ou \`apps\`.`,
-      missingArgs: `${emojis.error} ${config.separator} Você precisa informar a **categoria** e o **cargo**. Exemplo: \`p.autorole users @cargo\`.`,
-      missingCategory: `${emojis.error} ${config.separator} Você precisa informar a **categoria** para desativar. Exemplo: \`p.autorole off users\`.`,
+      invalidCategory: `${config.separator(emojis.error)} A categoria informada é **inválida**. Use \`all\`, \`users\` ou \`apps\`.`,
+      missingArgs: `${config.separator(emojis.error)} Você precisa informar a **categoria** e o **cargo**. Exemplo: \`p.autorole users @cargo\`.`,
+      missingCategory: `${config.separator(emojis.error)} Você precisa informar a **categoria** para desativar. Exemplo: \`p.autorole off users\`.`,
       alreadyDisabled: (category: string) =>
-        `${emojis.error} ${config.separator} A categoria **${category}** já está desativada.`,
-      roleAboveBot: `${emojis.error} ${config.separator} O cargo informado está **acima** do meu cargo mais alto, então não posso entregá-lo.`,
-      roleAboveAuthor: `${emojis.error} ${config.separator} O cargo informado está **acima** do seu cargo mais alto.`,
-      invalidRoleManaged: `${emojis.error} ${config.separator} O cargo informado não pode ser utilizado (cargo @everyone ou gerenciado por integração).`,
+        `${config.separator(emojis.error)} A categoria **${category}** já está desativada.`,
+      roleAboveBot: `${config.separator(emojis.error)} O cargo informado está **acima** do meu cargo mais alto, então não posso entregá-lo.`,
+      roleAboveAuthor: `${config.separator(emojis.error)} O cargo informado está **acima** do seu cargo mais alto.`,
+      invalidRoleManaged: `${config.separator(emojis.error)} O cargo informado não pode ser utilizado (cargo @everyone ou gerenciado por integração).`,
     },
   },
 }

@@ -24,6 +24,41 @@ export function parseUserId(raw?: string): string | null {
 
 export { parseUserId as parseTargetId }
 
+export interface ParsedMessageReference {
+  guildId?: string
+  channelId?: string
+  messageId: string
+}
+
+export function parseMessageReference(
+  input?: string,
+): ParsedMessageReference | null {
+  const trimmed = input?.trim()
+  if (!trimmed) return null
+
+  try {
+    const url = new URL(trimmed)
+    const match = url.pathname.match(
+      /\/channels\/(\d{15,25})\/(\d{15,25})\/(\d{15,25})\/?$/,
+    )
+    if (match) {
+      return {
+        guildId: match[1],
+        channelId: match[2],
+        messageId: match[3]!,
+      }
+    }
+  } catch {
+    // Not a URL; fall through to snowflake handling.
+  }
+
+  if (/^\d{15,25}$/.test(trimmed)) {
+    return { messageId: trimmed }
+  }
+
+  return null
+}
+
 export function parseChannelId(input?: string): string | null {
   if (!input) return null
   const trimmed = input.trim()
