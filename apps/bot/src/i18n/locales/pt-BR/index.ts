@@ -9,6 +9,7 @@ import ship from './commands/fun/ship'
 import autoreaction from './commands/settings/autoreaction'
 import autorole from './commands/settings/autorole'
 import reactionroles from './commands/settings/reactionroles'
+import ticket from './commands/settings/ticket'
 import avatar from './commands/utility/avatar'
 import botinfo from './commands/utility/botinfo'
 import botinvite from './commands/utility/botinvite'
@@ -33,6 +34,7 @@ import errors from './errors'
 
 export default {
   commands: {
+    ticket,
     help,
     ping,
     autoreaction,
