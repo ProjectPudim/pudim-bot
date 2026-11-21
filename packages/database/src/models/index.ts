@@ -1,5 +1,6 @@
 export * from './reaction'
 export * from './autorole'
 export * from './autoreaction'
+export * from './giveaway'
 export * from './ticket'
 export * from './ticket-config'

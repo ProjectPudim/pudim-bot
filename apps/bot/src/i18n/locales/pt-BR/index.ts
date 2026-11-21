@@ -15,6 +15,7 @@ import botinfo from './commands/utility/botinfo'
 import botinvite from './commands/utility/botinvite'
 import channelinfo from './commands/utility/channelinfo'
 import emojiinfo from './commands/utility/emojiinfo'
+import giveaway from './commands/utility/giveaway'
 import help from './commands/utility/help'
 import inviteinfo from './commands/utility/inviteinfo'
 import ping from './commands/utility/ping'
@@ -34,6 +35,7 @@ import errors from './errors'
 
 export default {
   commands: {
+    giveaway,
     ticket,
     help,
     ping,
