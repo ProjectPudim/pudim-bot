@@ -1,6 +1,5 @@
 import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { fetchFluxerProfile } from '#bot/services'
 import {
   Embed,
   getUserBannerUrl,
@@ -8,6 +7,7 @@ import {
   resolveUser,
   safeReplyMentions,
 } from '#bot/utils'
+import { fetchFluxerProfile } from '#bot/utils/fluxer-profile'
 
 export default createCommand({
   name: 'userbanner',

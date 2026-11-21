@@ -1,6 +1,6 @@
 import type { Guild, User } from '@fluxerjs/core'
 import { images } from '#bot/config'
-import type { FluxerProfile } from '#bot/services'
+import type { FluxerProfile } from './fluxer-profile'
 
 type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096
 

@@ -3,7 +3,6 @@ import { SnowflakeUtil } from '@fluxerjs/util'
 import type { RestMember } from '@pudim/shared/types'
 import { colors, emojis, images, type BadgeKey } from '#bot/config'
 import type { TranslateFunction } from '#bot/i18n'
-import type { FluxerProfile } from '#bot/services'
 import {
   Embed,
   formatTimestampPair,
@@ -13,6 +12,7 @@ import {
   toUnixTimestamp,
   truncate,
 } from '#bot/utils'
+import type { FluxerProfile } from '#bot/utils/fluxer-profile'
 import { formatSafeBio } from './bio'
 import { formatPublicConnections } from './connections'
 

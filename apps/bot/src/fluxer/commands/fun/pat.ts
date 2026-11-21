@@ -1,4 +1,4 @@
-import { createRoleplayCommand } from '#bot/modules/roleplay'
+import { createRoleplayCommand } from '#bot/managers/roleplay'
 
 export default createRoleplayCommand({
   action: 'pat',

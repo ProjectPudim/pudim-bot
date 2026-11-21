@@ -1,7 +1,6 @@
 import { Category } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { buildUserInfoEmbeds } from '#bot/modules/userinfo'
-import { fetchFluxerProfile } from '#bot/services'
+import { buildUserInfoEmbeds } from '#bot/managers/userinfo'
 import {
   fetchMember,
   parseUserId,
@@ -9,6 +8,7 @@ import {
   safeReplyMentions,
   withTimeout,
 } from '#bot/utils'
+import { fetchFluxerProfile } from '#bot/utils/fluxer-profile'
 
 const API_TIMEOUT_MS = 4_000
 const CLIENT_TIMEOUT_MS = 3_000

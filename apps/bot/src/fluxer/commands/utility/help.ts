@@ -11,7 +11,7 @@ import {
   registerHelpReactions,
   sendHelpWithReactions,
   type HelpState,
-} from '#bot/modules/help'
+} from '#bot/managers/help'
 
 registerHelpReactions()
 

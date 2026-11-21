@@ -1,13 +1,13 @@
 import { AttachmentBuilder } from '@fluxerjs/core'
 import { Category, images } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
-import { generateShipImage } from '#bot/modules/canvas/ship'
 import {
   getUserAvatarUrl,
   parseUserId,
   resolveUser,
   safeReplyMentions,
 } from '#bot/utils'
+import { generateShipImage } from '#bot/utils/canvas/ship'
 
 type ShipResultKey =
   | 'selfLove'

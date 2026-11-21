@@ -1,6 +1,6 @@
 import type { CommandContext } from '@pudim/framework'
 import { emojis, type Category } from '#bot/config'
-import { reactionManager, type ReactionContext } from '#bot/managers'
+import { reactionManager, type ReactionContext } from '#bot/managers/reaction'
 import type { Embed } from '#bot/utils'
 import { buildCategoryEmbed, buildHomeEmbed } from './embeds'
 import {

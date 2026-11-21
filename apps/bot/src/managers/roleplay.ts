@@ -3,8 +3,11 @@ import type { CommandContext, LocalizationMap } from '@pudim/framework'
 import { Category, colors } from '#bot/config'
 import { createCommand } from '#bot/fluxer'
 import { i18n } from '#bot/i18n'
-import { fetchRoleplayMedia, type RoleplayAction } from '#bot/services'
 import { Embed, parseUserId } from '#bot/utils'
+import {
+  fetchRoleplayMedia,
+  type RoleplayAction,
+} from '#bot/utils/roleplay-api'
 
 export interface RoleplayCommandConfig {
   action: RoleplayAction

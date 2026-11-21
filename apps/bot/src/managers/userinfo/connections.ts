@@ -1,5 +1,5 @@
-import type { ConnectedAccount } from '#bot/services'
 import { safeText } from '#bot/utils'
+import type { ConnectedAccount } from '#bot/utils/fluxer-profile'
 
 const MAX_CONNECTIONS = 15
 
